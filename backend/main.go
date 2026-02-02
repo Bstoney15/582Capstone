@@ -5,6 +5,7 @@ import (
 	"backend/libraries/server"
 )
 
+// realistically we shouldnt need any more code in this file but you never know
 func main() {
 	fmt.Println("Starting Backend Service...")
 

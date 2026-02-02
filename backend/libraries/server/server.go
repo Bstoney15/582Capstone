@@ -2,7 +2,7 @@ package server
 
 import (
 	"net/http"
-	"backend/libraries/server/routes"
+	"backend/libraries/server/handlers"
 	"backend/libraries/sessionmanager"
 )
 
