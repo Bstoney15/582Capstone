@@ -1,8 +1,8 @@
 package models
 
 type MerchantBusinessProfile struct {
-	MerchantBusinessProfileID                 string   `gorm:"primaryKey" json:"merchant_business_profile_id"`
-	MerchantBusinessProfileMerchantID         string   `gorm:"not null" json:"merchant_business_profile_merchant_id"`
+	MerchantBusinessProfileID                 string   `gorm:"primaryKey;type:varchar(36)" json:"merchant_business_profile_id"`
+	MerchantBusinessProfileMerchantID         string   `gorm:"not null;type:varchar(36)" json:"merchant_business_profile_merchant_id"`
 	Merchant                                  Merchant `gorm:"foreignKey:MerchantBusinessProfileMerchantID;references:MerchantID" json:"merchant,omitempty"`
 	MerchantBusinessProfileDBAName            string   `gorm:"not null" json:"merchant_business_profile_dba_name"`
 	MerchantBusinessProfileRegistrationNumber string   `gorm:"not null" json:"merchant_business_profile_registration_number"`
