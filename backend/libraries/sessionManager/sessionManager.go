@@ -3,7 +3,7 @@
 // Author: Benjamin Stonestreet
 // Date: 2025-10-23
 
-package sessionmanager
+package sessionManager
 
 import (
 	"crypto/rand"
