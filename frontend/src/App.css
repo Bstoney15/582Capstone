@@ -49,3 +49,14 @@
   font-size: 1.25rem;
   border-radius: 8px;
 }
+
+.nav {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin: 12px 0 24px;
+}
+
+.nav a {
+  text-decoration: underline;
+}
