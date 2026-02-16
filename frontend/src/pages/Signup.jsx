@@ -61,9 +61,6 @@ export default function Signup() {
 
   return (
     <div className="auth-page">
-      <button className="theme-toggle" onClick={toggleTheme}>
-        {theme === "dark" ? "☀️" : "🌙"}
-      </button>
 
       <div className="auth-card">
         <h1 className="auth-title">Create Account</h1>
