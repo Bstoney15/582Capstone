@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function Login() {
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     username: "",
     password: ""
@@ -16,7 +17,7 @@ export default function Login() {
     });
   }
 
-  function handleSubmit(e) {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!form.username || !form.password) {
@@ -24,11 +25,34 @@ export default function Login() {
       return;
     }
 
-    setError("");
-    console.log("Login form submitted:", form);
+    try {
+      const response = await fetch("/api/user/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(form),
+      });
 
-    // Later: call backend here
-  }
+      let data;
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        data = await response.json();
+      } else {
+        data = { message: await response.text() };
+      }
+
+      if (response.ok) {
+        console.log("Login successful", data);
+        navigate("/");
+      } else {
+        setError(data.message || "Login failed. Please try again.");
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("An error occurred. Please try again later.");
+    }
+  };
 
   return (
     <div className="auth-page">
