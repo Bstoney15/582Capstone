@@ -7,10 +7,11 @@ import (
 	"log"
 	"net/http"
 
+	"os"
+
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"os"
 )
 
 // server struct is used to inject dependencies into route handlers
@@ -25,12 +26,11 @@ func NewServer() *Server {
 
 	driver := sqlite.Open("./xrpay.db")
 
-	if(os.Getenv("production") == "true") {
+	if os.Getenv("production") == "true" {
 		log.Println("Running in production mode")
 		dsn := "root:secret@tcp(mysql-container:3306)/xrpay?charset=utf8mb4&parseTime=True&loc=Local"
 		driver = mysql.Open(dsn)
 	}
-
 
 	db, err := gorm.Open(driver, &gorm.Config{})
 	if err != nil {
@@ -46,7 +46,8 @@ func NewServer() *Server {
 
 // start the servers and sets up any dependencies that are needed.
 func (s *Server) Start(address string) error {
-	routes.AddRoutesToServer(s.Router)
+	h := routes.NewHandler(s.DB, s.SessionManager)
+	h.RegisterRoutes(s.Router)
 	s.AutoMigrateDB()
 	return http.ListenAndServe(address, s.Router)
 }

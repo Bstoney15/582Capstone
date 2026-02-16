@@ -7,7 +7,6 @@ type User struct {
 	UserLastName     string `gorm:"not null" json:"user_last_name"`
 	UserPasswordHash string `gorm:"not null" json:"user_password_hash"`
 	UserStatus       string `gorm:"not null" json:"user_status"`
-	Role             Role   `gorm:"foreignKey:UserRoleID;references:RoleID" json:"role,omitempty"`
 }
 
 func (User) TableName() string {
