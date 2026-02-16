@@ -116,3 +116,66 @@
   text-align: center;
   margin-top: 1rem;
 }
+
+.home-card {
+  max-width: 480px;
+}
+
+.home-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-bottom: 1.75rem;
+}
+
+.home-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  text-align: left;
+}
+
+.home-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.home-feature p {
+  margin: 0;
+  line-height: 1.5;
+  opacity: 0.85;
+}
+
+.home-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.home-button {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  transition: opacity 0.2s;
+}
+
+.home-button:hover {
+  opacity: 0.85;
+}
+
+.home-button-primary {
+  background: var(--color-primary, #646cff);
+  color: #fff;
+  border-color: var(--color-primary, #646cff);
+}
+
+.home-button-secondary {
+  background: transparent;
+  color: inherit;
+}
