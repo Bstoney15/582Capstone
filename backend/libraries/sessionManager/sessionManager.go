@@ -9,17 +9,19 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"log"
+	"net/http"
 	"sync"
 	"time"
 )
 
 // in seconds, need to multiply by time.Second() to convert to second.
 const cleanupInterval = 600
-const sessionLength = 300 // session length gets reset on each check. 
+const sessionLength = 300 // session length gets reset on each check.
+const SessionCookieName = "session_id"
 
 // could add more fields to this and store in db so user can see historical how they have done each session
 type sessionData struct {
-	UserID    uint
+	UserID    string
 	SessionID string
 	Expiry    time.Time
 }
@@ -32,7 +34,7 @@ func (sd sessionData) IsExpired() bool {
 type SessionManager struct {
 	mu          sync.RWMutex           // mutex so we dont get any race conditions. Need to call mw.rLock() or mu.rwLock() and their corresponding unlock functions to use
 	sessions    map[string]sessionData // maps session ID to session data
-	idToSession map[uint]sessionData
+	idToSession map[string]sessionData
 
 	stop   chan struct{}
 	ticker *time.Ticker
@@ -42,7 +44,7 @@ type SessionManager struct {
 func NewSessionManager() *SessionManager {
 	sm := &SessionManager{
 		sessions:    make(map[string]sessionData),
-		idToSession: make(map[uint]sessionData),
+		idToSession: make(map[string]sessionData),
 		stop:        make(chan struct{}),
 		ticker:      time.NewTicker(cleanupInterval * time.Second),
 	}
@@ -89,7 +91,7 @@ func generateRandomString(length int) (string, error) {
 }
 
 // creates a new session for the given user ID and returns the session ID
-func (sm *SessionManager) CreateSession(userID uint) (sessionID string) {
+func (sm *SessionManager) CreateSession(userID string) (sessionID string) {
 	randomString, err := generateRandomString(32)
 	if err != nil {
 		panic(err)
@@ -104,7 +106,7 @@ func (sm *SessionManager) CreateSession(userID uint) (sessionID string) {
 		Expiry:    time.Now().Add(sessionLength * time.Second),
 	}
 
-	sm.idToSession[uint(userID)] = sm.sessions[randomString]
+	sm.idToSession[userID] = sm.sessions[randomString]
 
 	return randomString
 }
@@ -133,7 +135,7 @@ func (sm *SessionManager) NumberOfActiveSessions() int {
 }
 
 // checks if the user has an active session
-func (sm *SessionManager) CheckIfUserHasActiveSession(userID uint) (sessionData, bool) {
+func (sm *SessionManager) CheckIfUserHasActiveSession(userID string) (sessionData, bool) {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
@@ -156,4 +158,26 @@ func (sm *SessionManager) DeleteSession(sessionID string) {
 
 	delete(sm.sessions, sessionID)
 	delete(sm.idToSession, data.UserID)
+}
+
+// SetSessionCookie sets the session ID in a secure http-only cookie
+func (sm *SessionManager) SetSessionCookie(w http.ResponseWriter, sessionID string) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     SessionCookieName,
+		Value:    sessionID,
+		HttpOnly: true,
+		Path:     "/",
+		// Secure:   true, // Uncomment when running on HTTPS
+		// SameSite: http.SameSiteStricktMode,
+		MaxAge: sessionLength,
+	})
+}
+
+// GetSessionToken retrieves the session ID from the request cookies
+func (sm *SessionManager) GetSessionToken(r *http.Request) (string, error) {
+	cookie, err := r.Cookie(SessionCookieName)
+	if err != nil {
+		return "", err
+	}
+	return cookie.Value, nil
 }

@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useTheme } from "../hooks/useTheme";
 
 export default function Signup() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -12,6 +13,7 @@ export default function Signup() {
   });
 
   const [errors, setErrors] = useState({});
+  const [serverError, setServerError] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -27,6 +29,7 @@ export default function Signup() {
         [name]: "",
       }));
     }
+    if (serverError) setServerError("");
   };
 
   const validate = () => {
@@ -49,25 +52,57 @@ export default function Signup() {
     return Object.keys(tempErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (validate()) {
-      console.log("Form submitted successfully", formData);
-      // Proceed with submission logic 
+      try {
+        const response = await fetch("/api/user/signup", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            username: formData.username,
+            password: formData.password
+          }),
+        });
 
+        let data;
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+          data = await response.json();
+        } else {
+          data = { message: await response.text() };
+        }
 
+        if (response.ok) {
+          console.log("Signup successful", data);
+          // Assuming user is logged in automatically and redirected
+          navigate("/"); 
+        } else {
+          setServerError(data.message || "Signup failed. Please try again.");
+        }
+      } catch (err) {
+        console.error("Signup error:", err);
+        setServerError("An error occurred. Please try again later.");
+      }
     }
   };
 
   return (
     <div className="auth-page">
-      <button className="theme-toggle" onClick={toggleTheme}>
-        {theme === "dark" ? "☀️" : "🌙"}
-      </button>
 
       <div className="auth-card">
         <h1 className="auth-title">Create Account</h1>
         <p className="auth-subtitle">Get started with XRPay</p>
+
+        {serverError && (
+          <div className="error-message" style={{ textAlign: 'center', marginBottom: '1rem' }}>
+            {serverError}
+          </div>
+        )}
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <div className="form-group">
