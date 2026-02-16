@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 export default function Login() {
   const [form, setForm] = useState({
-    email: "",
+    username: "",
     password: ""
   });
 
@@ -19,7 +19,7 @@ export default function Login() {
   function handleSubmit(e) {
     e.preventDefault();
 
-    if (!form.email || !form.password) {
+    if (!form.username || !form.password) {
       setError("All fields are required.");
       return;
     }
@@ -38,11 +38,11 @@ export default function Login() {
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Email</label>
+            <label>Username</label>
             <input
-              name="email"
-              type="email"
-              value={form.email}
+              name="username"
+              type="text"
+              value={form.username}
               onChange={handleChange}
               required
             />

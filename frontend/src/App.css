@@ -179,3 +179,14 @@
   background: transparent;
   color: inherit;
 }
+
+.input-error {
+  border-color: #ff4d4f !important;
+}
+
+.error-message {
+  color: #ff4d4f;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+  text-align: left;
+}
