@@ -7,7 +7,6 @@ type User struct {
 	UserLastName     string `gorm:"not null" json:"user_last_name"`
 	UserPasswordHash string `gorm:"not null" json:"user_password_hash"`
 	UserStatus       string `gorm:"not null" json:"user_status"`
-	UserRoleID       string `gorm:"not null;type:varchar(36)" json:"user_role_id"`
 	Role             Role   `gorm:"foreignKey:UserRoleID;references:RoleID" json:"role,omitempty"`
 }
 
