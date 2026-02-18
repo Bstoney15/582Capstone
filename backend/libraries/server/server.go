@@ -48,7 +48,17 @@ func NewServer() *Server {
 func (s *Server) Start(address string) error {
 	h := routes.NewHandler(s.DB, s.SessionManager)
 	h.RegisterRoutes(s.Router)
-	s.AutoMigrateDB()
+
+	if err := s.AutoMigrateDB(); err != nil {
+		return err
+	}
+
+	if os.Getenv("production") != "true" {
+		if err := s.SeedDevData(); err != nil {
+			return err
+		}
+	}
+
 	return http.ListenAndServe(address, s.Router)
 }
 
@@ -56,7 +66,7 @@ func (s *Server) AutoMigrateDB() error {
 	return s.DB.AutoMigrate(
 		&models.Merchant{},
 		&models.MerchantAPIKey{},
-		&models.MerchantAPIKey{},
+		&models.MerchantWebhookKey{},
 		&models.MerchantAddress{},
 		&models.MerchantBusinessProfile{},
 		&models.MerchantOwner{},
