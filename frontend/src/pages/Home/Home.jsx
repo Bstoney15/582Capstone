@@ -1,6 +1,9 @@
 import { Link } from "react-router-dom";
+import { useTheme } from "../../contexts/ThemeContext";
 
-export default function Home({ theme, toggleTheme }) {
+export default function Home() {
+  const { theme, toggleTheme } = useTheme();
+
   return (
     <div className="auth-page">
       {toggleTheme && (

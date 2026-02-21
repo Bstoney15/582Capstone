@@ -1,0 +1,101 @@
+/* Container that wraps both the trigger and the absolute menu */
+.custom-dropdown-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* The button that opens the dropdown */
+.custom-dropdown-trigger {
+    appearance: none;
+    background-color: var(--color-base);
+    border: 1px solid rgba(128, 128, 128, 0.3);
+    color: var(--color-text);
+    padding: 0.5rem 2.5rem 0.5rem 1rem;
+    border-radius: 4px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    outline: none;
+    min-width: 150px;
+    text-align: left;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.custom-dropdown-trigger:hover {
+    border-color: var(--color-primary);
+}
+
+.custom-dropdown-trigger:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(11, 110, 79, 0.2);
+}
+
+/* The text label inside the trigger */
+.custom-dropdown-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* The Chevron Icon */
+.custom-dropdown-icon {
+    position: absolute;
+    right: 0.75rem;
+    width: 1rem;
+    height: 1rem;
+    pointer-events: none;
+    color: var(--color-muted);
+    transition: transform 0.2s ease;
+}
+
+.custom-dropdown-icon.open {
+    transform: rotate(180deg);
+}
+
+/* The popup menu container */
+.custom-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    width: 100%;
+    min-width: 180px;
+    background-color: var(--color-base-variant);
+    border: 1px solid rgba(128, 128, 128, 0.2);
+    /* The user explicitly requested to remove rounded corners, padding above/below */
+    border-radius: 0;
+    padding: 0;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    z-index: 1010;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Individual options */
+.custom-dropdown-item {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    color: var(--color-text);
+    font-size: 0.95rem;
+    text-align: left;
+    background: transparent;
+    border: none;
+    width: 100%;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    /* Make sure there is no rounding here either */
+    border-radius: 0;
+}
+
+.custom-dropdown-item:hover {
+    background-color: rgba(11, 110, 79, 0.1);
+    color: var(--color-primary);
+}
+
+.custom-dropdown-item.active {
+    background-color: rgba(11, 110, 79, 0.15);
+    color: var(--color-primary);
+    font-weight: 500;
+}

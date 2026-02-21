@@ -8,9 +8,9 @@
   --color-base: #f7f8fa;
   --color-base-variant: #ffffff;
   --color-text: #0b1220;
-  --color-primary: #0b6e4f; 
+  --color-primary: #0b6e4f;
   --color-primary-hover: #095a41;
-  --color-secondary: #0f8a5f; 
+  --color-secondary: #0f8a5f;
   --color-secondary-hover: #0c704e;
   --color-muted: #5b6472;
 
@@ -26,9 +26,9 @@
   --color-base: #0b0f14;
   --color-base-variant: #121a22;
   --color-text: #e6f0ea;
-  --color-primary: #0f8a5f; 
+  --color-primary: #0f8a5f;
   --color-primary-hover: #12a170;
-  --color-secondary: #0b6e4f; 
+  --color-secondary: #0b6e4f;
   --color-secondary-hover: #095a41;
   --color-muted: #9aa6b2;
 }
@@ -38,14 +38,13 @@ a {
   color: var(--color-primary);
   text-decoration: inherit;
 }
+
 a:hover {
   color: var(--color-primary-hover);
 }
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
   background-color: var(--color-base);
@@ -69,9 +68,11 @@ button {
   cursor: pointer;
   transition: border-color 0.25s;
 }
+
 button:hover {
   border-color: var(--color-primary);
 }
+
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;

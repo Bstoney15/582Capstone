@@ -1,28 +1,24 @@
 package routes
 
 import (
-	"backend/libraries/sessionManager"
 	"net/http"
 
 	"gorm.io/gorm"
 )
 
 type Handler struct {
-	DB             *gorm.DB
-	SessionManager *sessionManager.SessionManager
+	DB *gorm.DB
 }
 
-func NewHandler(db *gorm.DB, sm *sessionManager.SessionManager) *Handler {
+func NewHandler(db *gorm.DB) *Handler {
 	return &Handler{
-		DB:             db,
-		SessionManager: sm,
+		DB: db,
 	}
 }
 
 /*
 All api routes must be defined in this file. All routes must also be prefixed with api (/api/route)
 try to group routes by functionality and authentication requirements
-
 */
 func (h *Handler) RegisterRoutes(s *http.ServeMux) {
 
@@ -31,9 +27,10 @@ func (h *Handler) RegisterRoutes(s *http.ServeMux) {
 
 	s.HandleFunc("POST /api/user/login", h.LoginHandler)
 	s.HandleFunc("POST /api/user/signup", h.SignupHandler)
+	s.HandleFunc("GET /api/user/auth", h.CheckAuthHandler)
+	s.HandleFunc("GET /api/user/merchants", h.GetMerchantsHandler)
 
 	// Developer and above Routes
 
-	
 	// Admin Only Routes
 }
