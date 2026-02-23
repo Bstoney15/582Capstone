@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"backend/libraries/sessionManager"
 	"backend/models"
 	"encoding/json"
 	"net/http"
@@ -50,8 +51,8 @@ func (h *Handler) SignupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sessionID := h.SessionManager.CreateSession(user.UserID)
-	h.SessionManager.SetSessionCookie(w, sessionID)
+	sessionID := sessionManager.CreateSession(user.UserID)
+	sessionManager.SetSessionCookie(w, sessionID)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)

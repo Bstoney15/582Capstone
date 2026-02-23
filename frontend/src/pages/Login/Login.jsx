@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function Login() {
   const navigate = useNavigate();
+  const { setIsAuthenticated } = useAuth();
   const [form, setForm] = useState({
     username: "",
     password: ""
@@ -44,7 +46,8 @@ export default function Login() {
 
       if (response.ok) {
         console.log("Login successful", data);
-        navigate("/");
+        setIsAuthenticated(true); // manually update state to avoid an extra network request
+        navigate("/dashboard");
       } else {
         setError(data.message || "Login failed. Please try again.");
       }

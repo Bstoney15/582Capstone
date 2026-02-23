@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useTheme } from "../hooks/useTheme";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function Signup() {
   const navigate = useNavigate();
+  const { setIsAuthenticated } = useAuth();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -21,7 +22,7 @@ export default function Signup() {
       ...prev,
       [name]: value,
     }));
-    
+
     // Clear error when user types
     if (errors[name]) {
       setErrors((prev) => ({
@@ -37,7 +38,7 @@ export default function Signup() {
     if (!formData.firstName.trim()) tempErrors.firstName = "First name is required";
     if (!formData.lastName.trim()) tempErrors.lastName = "Last name is required";
     if (!formData.username.trim()) tempErrors.username = "Username is required";
-    
+
     if (!formData.password) {
       tempErrors.password = "Password is required";
     } else if (formData.password.length < 8) {
@@ -79,8 +80,8 @@ export default function Signup() {
 
         if (response.ok) {
           console.log("Signup successful", data);
-          // Assuming user is logged in automatically and redirected
-          navigate("/"); 
+          setIsAuthenticated(true); // manually update state to avoid an extra network request
+          navigate("/dashboard");
         } else {
           setServerError(data.message || "Signup failed. Please try again.");
         }
@@ -107,8 +108,8 @@ export default function Signup() {
         <form className="auth-form" onSubmit={handleSubmit}>
           <div className="form-group">
             <label>First Name</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               name="firstName"
               value={formData.firstName}
               onChange={handleChange}
@@ -119,8 +120,8 @@ export default function Signup() {
 
           <div className="form-group">
             <label>Last Name</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               name="lastName"
               value={formData.lastName}
               onChange={handleChange}
@@ -131,38 +132,38 @@ export default function Signup() {
 
           <div className="form-group">
             <label>Username</label>
-            <input 
+            <input
               type="text"
               name="username"
               value={formData.username}
               onChange={handleChange}
               className={errors.username ? "input-error" : ""}
             />
-             {errors.username && <span className="error-message">{errors.username}</span>}
+            {errors.username && <span className="error-message">{errors.username}</span>}
           </div>
 
           <div className="form-group">
             <label>Password</label>
-            <input 
-              type="password" 
+            <input
+              type="password"
               name="password"
               value={formData.password}
               onChange={handleChange}
               className={errors.password ? "input-error" : ""}
             />
-             {errors.password && <span className="error-message">{errors.password}</span>}
+            {errors.password && <span className="error-message">{errors.password}</span>}
           </div>
 
           <div className="form-group">
             <label>Confirm Password</label>
-            <input 
+            <input
               type="password"
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleChange}
               className={errors.confirmPassword ? "input-error" : ""}
             />
-             {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
+            {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
           </div>
 
           <button className="auth-button" type="submit">

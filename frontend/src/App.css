@@ -1,7 +1,5 @@
 #root {
-  max-width: 1280px;
   margin: 0 auto;
-  padding: 2rem;
   text-align: center;
 }
 
@@ -11,9 +9,11 @@
   will-change: filter;
   transition: filter 300ms;
 }
+
 .logo:hover {
   filter: drop-shadow(0 0 2em var(--color-primary));
 }
+
 .logo.react:hover {
   filter: drop-shadow(0 0 2em var(--color-primary));
 }
@@ -22,6 +22,7 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -73,7 +74,7 @@
   max-width: 420px;
   padding: 2rem;
   border-radius: 12px;
-  border: 1px solid rgba(128,128,128,0.3);
+  border: 1px solid rgba(128, 128, 128, 0.3);
 }
 
 .auth-title {
@@ -100,7 +101,7 @@
 .form-group input {
   padding: 0.5rem;
   border-radius: 8px;
-  border: 1px solid rgba(128,128,128,0.4);
+  border: 1px solid rgba(128, 128, 128, 0.4);
   background: transparent;
   color: inherit;
 }

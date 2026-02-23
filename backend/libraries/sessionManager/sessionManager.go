@@ -1,23 +1,34 @@
-// File contains functions for managing session isntances
+// File contains functions for managing session instances using JWT
 //
 // Author: Benjamin Stonestreet
 // Date: 2025-10-23
+// Refactored to JWT: 2026-02-20
 
 package sessionManager
 
 import (
-	"crypto/rand"
-	"encoding/hex"
-	"log"
+	"fmt"
 	"net/http"
-	"sync"
+	"os"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
-// in seconds, need to multiply by time.Second() to convert to second.
-const cleanupInterval = 600
-const sessionLength = 300 // session length gets reset on each check.
+const sessionLength = 300 // session length in seconds (5 minutes)
 const SessionCookieName = "session_id"
+
+// secret key used to sign the tokens. In a production app, this should be an environment variable.
+var jwtKey = []byte(getJWTKey())
+
+func getJWTKey() string {
+	key := os.Getenv("JWT_SECRET_KEY")
+	if key == "" {
+		// Provide a fallback for local development if the environment variable map isn't set yet
+		return "my_secret_key"
+	}
+	return key
+}
 
 // could add more fields to this and store in db so user can see historical how they have done each session
 type sessionData struct {
@@ -26,155 +37,80 @@ type sessionData struct {
 	Expiry    time.Time
 }
 
-// checks if the session is expired
-func (sd sessionData) IsExpired() bool {
-	return time.Now().After(sd.Expiry)
+// SessionClaims represents the structure of the JWT payload
+type SessionClaims struct {
+	UserID string `json:"user_id"`
+	jwt.RegisteredClaims
 }
 
-type SessionManager struct {
-	mu          sync.RWMutex           // mutex so we dont get any race conditions. Need to call mw.rLock() or mu.rwLock() and their corresponding unlock functions to use
-	sessions    map[string]sessionData // maps session ID to session data
-	idToSession map[string]sessionData
+// creates a new session for the given user ID and returns the JWT token
+func CreateSession(userID string) string {
+	expirationTime := time.Now().Add(sessionLength * time.Second)
 
-	stop   chan struct{}
-	ticker *time.Ticker
-}
-
-// returns a new session manager
-func NewSessionManager() *SessionManager {
-	sm := &SessionManager{
-		sessions:    make(map[string]sessionData),
-		idToSession: make(map[string]sessionData),
-		stop:        make(chan struct{}),
-		ticker:      time.NewTicker(cleanupInterval * time.Second),
+	claims := &SessionClaims{
+		UserID: userID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
 	}
 
-	go sm.cleanUpSessions()
-
-	return sm
-}
-
-// background function that regularly cleans up expired sessions
-func (sm *SessionManager) cleanUpSessions() {
-	for {
-		select {
-		case <-sm.ticker.C: // clean up interval, clean up expired sessions
-			sm.deleteExpired()
-		case <-sm.stop: // program shutting down or something
-			sm.ticker.Stop()
-			return
-		}
-	}
-}
-
-// helper function that deletes expired sessions from the session map
-func (sm *SessionManager) deleteExpired() {
-
-	sm.mu.Lock()         // gets full read write lock
-	defer sm.mu.Unlock() // unlock the lock after the function call
-
-	for id, data := range sm.sessions {
-		if data.IsExpired() {
-			delete(sm.sessions, id)
-			log.Println("removed ", id, " from active sessions due to expiry")
-		}
-	}
-}
-
-// helper function that generates a random string of given length
-func generateRandomString(length int) (string, error) {
-	bytes := make([]byte, length)
-	if _, err := rand.Read(bytes); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(bytes), nil
-}
-
-// creates a new session for the given user ID and returns the session ID
-func (sm *SessionManager) CreateSession(userID string) (sessionID string) {
-	randomString, err := generateRandomString(32)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(jwtKey)
 	if err != nil {
-		panic(err)
+		fmt.Println("Error creating token:", err)
+		return ""
 	}
 
-	sm.mu.Lock()         //gets full read write lock
-	defer sm.mu.Unlock() // unlocks after the function returns
+	return tokenString
+}
 
-	sm.sessions[randomString] = sessionData{
-		UserID:    userID,
-		SessionID: randomString,
-		Expiry:    time.Now().Add(sessionLength * time.Second),
+// retrieves session data for the given JWT token.
+// Also returns a string containing a new token if the current one was close to expiring and got rotated.
+func CheckSession(sessionToken string) (sessionData, string, bool) {
+	claims := &SessionClaims{}
+
+	token, err := jwt.ParseWithClaims(sessionToken, claims, func(token *jwt.Token) (interface{}, error) {
+		return jwtKey, nil
+	})
+
+	if err != nil || !token.Valid {
+		return sessionData{}, "", false
 	}
 
-	sm.idToSession[userID] = sm.sessions[randomString]
+	expiry := claims.ExpiresAt.Time
+	var newToken string
 
-	return randomString
-}
-
-// retrieves session data for the given session ID
-func (sm *SessionManager) CheckSession(sessionID string) (sessionData, bool) {
-	sm.mu.Lock()
-	defer sm.mu.Unlock()
-
-	data, ok := sm.sessions[sessionID]
-	if !ok { // key was not found in map
-		return sessionData{}, false
+	// Rotate the token if it has less than a minute until expiry
+	if time.Until(expiry) < 1*time.Minute {
+		newToken = CreateSession(claims.UserID)
+		// Update the session details since we are issuing a new token
+		sessionToken = newToken
+		expiry = time.Now().Add(sessionLength * time.Second)
 	}
 
-	data.Expiry = time.Now().Add(sessionLength * time.Second)
-	sm.sessions[sessionID] = data
-
-	return data, true
+	return sessionData{
+		UserID:    claims.UserID,
+		SessionID: sessionToken,
+		Expiry:    expiry,
+	}, newToken, true
 }
 
-// returns the number of active sessions
-func (sm *SessionManager) NumberOfActiveSessions() int {
-	sm.mu.RLock()
-	defer sm.mu.RUnlock()
-	return len(sm.sessions)
-}
-
-// checks if the user has an active session
-func (sm *SessionManager) CheckIfUserHasActiveSession(userID string) (sessionData, bool) {
-	sm.mu.RLock()
-	defer sm.mu.RUnlock()
-
-	session, ok := sm.idToSession[userID]
-	if !ok || session.IsExpired() {
-		return sessionData{}, false
-	}
-	return session, true
-}
-
-// deletes the session with the given session ID
-func (sm *SessionManager) DeleteSession(sessionID string) {
-	sm.mu.Lock()
-	defer sm.mu.Unlock()
-
-	data, ok := sm.sessions[sessionID]
-	if !ok {
-		return
-	}
-
-	delete(sm.sessions, sessionID)
-	delete(sm.idToSession, data.UserID)
-}
-
-// SetSessionCookie sets the session ID in a secure http-only cookie
-func (sm *SessionManager) SetSessionCookie(w http.ResponseWriter, sessionID string) {
+// SetSessionCookie sets the JWT token in a secure http-only cookie
+func SetSessionCookie(w http.ResponseWriter, sessionToken string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     SessionCookieName,
-		Value:    sessionID,
+		Value:    sessionToken,
 		HttpOnly: true,
 		Path:     "/",
 		// Secure:   true, // Uncomment when running on HTTPS
-		// SameSite: http.SameSiteStricktMode,
+		// SameSite: http.SameSiteStrictMode,
 		MaxAge: sessionLength,
 	})
 }
 
-// GetSessionToken retrieves the session ID from the request cookies
-func (sm *SessionManager) GetSessionToken(r *http.Request) (string, error) {
+// GetSessionToken retrieves the session token from the request cookies
+func GetSessionToken(r *http.Request) (string, error) {
 	cookie, err := r.Cookie(SessionCookieName)
 	if err != nil {
 		return "", err

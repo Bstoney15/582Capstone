@@ -2,7 +2,6 @@ package server
 
 import (
 	routes "backend/libraries/server/handlers"
-	"backend/libraries/sessionManager"
 	"backend/models"
 	"log"
 	"net/http"
@@ -16,9 +15,8 @@ import (
 
 // server struct is used to inject dependencies into route handlers
 type Server struct {
-	Router         *http.ServeMux
-	SessionManager *sessionManager.SessionManager
-	DB             *gorm.DB
+	Router *http.ServeMux
+	DB     *gorm.DB
 }
 
 // returnes a new server instance. all dependencies should be initialized here
@@ -38,17 +36,26 @@ func NewServer() *Server {
 	}
 
 	return &Server{
-		Router:         http.NewServeMux(),
-		SessionManager: sessionManager.NewSessionManager(),
-		DB:             db,
+		Router: http.NewServeMux(),
+		DB:     db,
 	}
 }
 
 // start the servers and sets up any dependencies that are needed.
 func (s *Server) Start(address string) error {
-	h := routes.NewHandler(s.DB, s.SessionManager)
+	h := routes.NewHandler(s.DB)
 	h.RegisterRoutes(s.Router)
-	s.AutoMigrateDB()
+
+	if err := s.AutoMigrateDB(); err != nil {
+		return err
+	}
+
+	if os.Getenv("production") != "true" {
+		if err := s.SeedDevData(); err != nil {
+			return err
+		}
+	}
+
 	return http.ListenAndServe(address, s.Router)
 }
 
@@ -56,7 +63,7 @@ func (s *Server) AutoMigrateDB() error {
 	return s.DB.AutoMigrate(
 		&models.Merchant{},
 		&models.MerchantAPIKey{},
-		&models.MerchantAPIKey{},
+		&models.MerchantWebhookKey{},
 		&models.MerchantAddress{},
 		&models.MerchantBusinessProfile{},
 		&models.MerchantOwner{},
