@@ -29,8 +29,11 @@ func (h *Handler) RegisterRoutes(s *http.ServeMux) {
 	s.HandleFunc("POST /api/user/signup", h.SignupHandler)
 	s.HandleFunc("GET /api/user/auth", h.CheckAuthHandler)
 	s.HandleFunc("GET /api/user/merchants", h.GetMerchantsHandler)
+	s.HandleFunc("GET /api/user/info", h.GetUserInfo)
 
 	// Developer and above Routes
 
 	// Admin Only Routes
+	s.HandleFunc("POST /api/merchant/add-user", h.AddUserHandler)
+	s.HandleFunc("POST /api/merchant/edit-user-role", h.EditUserHandler)
 }
