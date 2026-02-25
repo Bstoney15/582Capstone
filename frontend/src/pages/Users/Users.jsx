@@ -102,7 +102,7 @@ export default function Users() {
         try {
             // TODO: replace with real call when POST /api/merchant/edit-user-role is ready
             const res = await fetch("/api/merchant/edit-user-role", {
-                method: "POST",
+                method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     merchant_id: selectedMerchant.id,
