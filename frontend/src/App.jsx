@@ -70,7 +70,11 @@ const router = createBrowserRouter([
           {
             path: "/users",
             element: <Users />
-          }
+          },
+          {
+            path: "/create-merchant",
+            element: <CreateMerchant />
+          },
         ]
       },
       {
