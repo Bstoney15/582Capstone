@@ -165,7 +165,6 @@ export default function Users() {
         setEditSaving(true);
         setEditError(null);
         try {
-            // TODO: replace with real call when PATCH /api/merchant/edit-user-role is ready
             const res = await fetch("/api/merchant/edit-user-role", {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
@@ -196,13 +195,18 @@ export default function Users() {
         setEditSaving(true);
         setEditError(null);
         try {
-            // TODO: add backend endpoint to remove user from merchant, then call it here
-            console.log("Remove from merchant – endpoint not implemented yet", {
-                merchant_id: selectedMerchant.id,
-                user_id: editingUser.user_id,
-            });
+            const res = await fetch("/api/merchant/remove-user", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    merchant_id: selectedMerchant.id,
+                    user_id: editingUser.user_id,
+                    editor_id: userInfo.user_id,
+                })
+            })
+            if (!res.ok) throw new Error("Failed to remove user");
             closeEditModal();
-            // setMerchantUsers((prev) => prev.filter((u) => u.user_id !== editingUser.user_id));
+            setMerchantUsers((prev) => prev.filter((u) => u.user_id !== editingUser.user_id));
         } catch (err) {
             setEditError(err.message);
         } finally {

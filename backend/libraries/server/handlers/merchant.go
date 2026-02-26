@@ -176,7 +176,7 @@ func (h *Handler) EditUserHandler(w http.ResponseWriter, r *http.Request) {
 		MerchantID string `json:"merchant_id"`
 		UserID     string `json:"user_id"`
 		Role       string `json:"role"`
-		EditorId   string `json:"editor_id"`
+		EditorID   string `json:"editor_id"`
 	}
 
 	// try to parse request body
@@ -186,13 +186,13 @@ func (h *Handler) EditUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// make sure request has all required params
-	if requestBody.MerchantID == "" || requestBody.UserID == "" || requestBody.Role == "" {
+	if requestBody.MerchantID == "" || requestBody.UserID == "" || requestBody.Role == "" || requestBody.EditorID == "" {
 		http.Error(w, "merchant_id, user_id, and role are required", http.StatusBadRequest)
 		return
 	}
 	// get user who is trying to make an edit's role
 	var editorRole models.Role
-	if err := h.DB.Where("role_user_id = ? AND role_merchant_id = ?", requestBody.EditorId, requestBody.MerchantID).First(&editorRole).Error; err != nil {
+	if err := h.DB.Where("role_user_id = ? AND role_merchant_id = ?", requestBody.EditorID, requestBody.MerchantID).First(&editorRole).Error; err != nil {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
@@ -317,6 +317,63 @@ func (h *Handler) RemoveMerchantUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// TODO actually implement removing
+	type RemoveUserRequest struct {
+		MerchantID string `json:"merchant_id"`
+		UserID     string `json:"user_id"`
+		EditorID   string `json:"editor_id"`
+	}
 
+	// try to parse request body
+	var requestBody RemoveUserRequest
+	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+		http.Error(w, "Error parsing request", http.StatusBadRequest)
+		return
+	}
+
+	// make sure request has all required params
+	if requestBody.MerchantID == "" || requestBody.UserID == "" || requestBody.EditorID == "" {
+		http.Error(w, "merchant_id, user_id, and editor_id are required", http.StatusBadRequest)
+		return
+	}
+	// get user who is trying to remove's role
+	var removerRole models.Role
+	if err := h.DB.Where("role_user_id = ? AND role_merchant_id = ?", requestBody.EditorID, requestBody.MerchantID).First(&removerRole).Error; err != nil {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+	// check if that role is allowed to edit
+	if !rolesAllowedToEdit[removerRole.RoleName] {
+		http.Error(w, "invalid role", http.StatusBadRequest)
+		return
+	}
+
+	// Verify merchant exists
+	var merchant models.Merchant
+	if err := h.DB.Where("merchant_id = ?", requestBody.MerchantID).First(&merchant).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "Merchant not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Failed to verify merchant", http.StatusInternalServerError)
+		return
+	}
+	// get user role we're trying to edit
+	var userRole models.Role
+	if err := h.DB.Where("role_user_id = ?", requestBody.UserID).First(&userRole).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "No user found", http.StatusBadRequest)
+			return
+		}
+		http.Error(w, "Failed to lookup user", http.StatusInternalServerError)
+		return
+	}
+	// make the deletion of that role record
+	h.DB.Delete(&userRole)
+
+	// craft response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "User removed",
+	})
 }
