@@ -173,6 +173,7 @@ export default function Users() {
                     merchant_id: selectedMerchant.id,
                     user_id: editingUser.user_id,
                     role: editRole,
+                    editor_id: userInfo.user_id,
                 }),
             });
             if (!res.ok) throw new Error("Failed to update role");

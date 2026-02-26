@@ -53,7 +53,7 @@ func (h *Handler) GetMerchantsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // defines if these roles are allowed to be set
-var allowedRoles = map[string]bool{
+var allowedRolesToSet = map[string]bool{
 	models.RoleAdmin: true, models.RoleDeveloper: true, models.RoleOwner: false,
 }
 
@@ -86,7 +86,7 @@ func (h *Handler) AddUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !allowedRoles[requestBody.Role] {
+	if !allowedRolesToSet[requestBody.Role] {
 		http.Error(w, "Invalid role", http.StatusBadRequest)
 		return
 	}
@@ -153,6 +153,11 @@ func (h *Handler) AddUserHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// defines if these roles are allowed to edit other users roles
+var rolesAllowedToEdit = map[string]bool{
+	models.RoleAdmin: true, models.RoleDeveloper: false, models.RoleOwner: true,
+}
+
 func (h *Handler) EditUserHandler(w http.ResponseWriter, r *http.Request) {
 	// auth copied from GetMerchantsHandler func
 	sessionToken, err := sessionManager.GetSessionToken(r)
@@ -166,17 +171,83 @@ func (h *Handler) EditUserHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-	// TODO add logic for editing user...
+
+	type EditUserRequest struct {
+		MerchantID string `json:"merchant_id"`
+		UserID     string `json:"user_id"`
+		Role       string `json:"role"`
+		EditorId   string `json:"editor_id"`
+	}
+
+	// try to parse request body
+	var requestBody EditUserRequest
+	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+		http.Error(w, "Error parsing request", http.StatusBadRequest)
+		return
+	}
+	// make sure request has all required params
+	if requestBody.MerchantID == "" || requestBody.UserID == "" || requestBody.Role == "" {
+		http.Error(w, "merchant_id, user_id, and role are required", http.StatusBadRequest)
+		return
+	}
+	// get user who is trying to make an edit's role
+	var editorRole models.Role
+	if err := h.DB.Where("role_user_id = ? AND role_merchant_id = ?", requestBody.EditorId, requestBody.MerchantID).First(&editorRole).Error; err != nil {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+	// check if that role is allowed to edit
+	if !rolesAllowedToEdit[editorRole.RoleName] {
+		http.Error(w, "invalid role", http.StatusBadRequest)
+		return
+	}
+
+	// Verify merchant exists
+	var merchant models.Merchant
+	if err := h.DB.Where("merchant_id = ?", requestBody.MerchantID).First(&merchant).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "Merchant not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Failed to verify merchant", http.StatusInternalServerError)
+		return
+	}
+	// get user were trying to edit
+	var user models.User
+	if err := h.DB.Where("user_id = ?", requestBody.UserID).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "No user found with that username", http.StatusBadRequest)
+			return
+		}
+		http.Error(w, "Failed to lookup user", http.StatusInternalServerError)
+		return
+	}
+	// get role associated with user
+	var userRoleToEdit models.Role
+	if err := h.DB.Where("role_merchant_id = ? AND role_user_id = ?", requestBody.MerchantID, user.UserID).First(&userRoleToEdit).Error; err != nil {
+		http.Error(w, "failed to find users role", http.StatusNotFound)
+		return
+	}
+	// edit the users role
+	userRoleToEdit.RoleName = requestBody.Role
+	h.DB.Save(&userRoleToEdit)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "User edited",
+	})
+
 }
 
-func (h *Handler) GetAllMerchantUsers(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetAllMerchantUsersHandler(w http.ResponseWriter, r *http.Request) {
 	// auth copied from GetMerchantsHandler func
 	sessionToken, err := sessionManager.GetSessionToken(r)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-	// may need to replace first _ with sessionData
+
 	sessionData, _, active := sessionManager.CheckSession(sessionToken)
 	if !active {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -231,4 +302,21 @@ func (h *Handler) GetAllMerchantUsers(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(responses)
+}
+
+func (h *Handler) RemoveMerchantUserHandler(w http.ResponseWriter, r *http.Request) {
+	sessionToken, err := sessionManager.GetSessionToken(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	_, _, active := sessionManager.CheckSession(sessionToken)
+	if !active {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// TODO actually implement removing
+
 }
