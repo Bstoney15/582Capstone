@@ -36,3 +36,15 @@ npm run dev # starts dev server at localhost:5173
 ```
 
 Now that you have both the frontend and backend servers running, you can open up the frontend URL in your browser (`http://localhost:5173`) and interact with the XRPay webpage.
+
+## Seeded Development Accounts
+
+When running the database in development mode, the following seeded accounts are available for immediate use. 
+
+All accounts use the same password: `password`
+
+| Role | Username |
+| :--- | :--- |
+| **Admin** | `dev_admin` |
+| **Developer** | `dev_developer` |
+| **Owner** | `dev_owner` |
