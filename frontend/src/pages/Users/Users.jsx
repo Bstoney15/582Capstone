@@ -19,6 +19,12 @@ export default function Users() {
     const [editSaving, setEditSaving] = useState(false);
     const [editError, setEditError] = useState(null);
 
+    const [addingUser, setAddingUser] = useState(false);
+    const [addUserUsername, setAddUserUsername] = useState("");
+    const [addUserRole, setAddUserRole] = useState("");
+    const [addError, setAddError] = useState(null);
+    const [addSaving, setAddSaving] = useState(false);
+
     const ROLES = ["Owner", "Admin", "Developer"];
 
     // Fetch current user info on mount
@@ -79,9 +85,68 @@ export default function Users() {
         return <Navigate to="/dashboard" replace />;
     }
 
-    // Placeholder – wire up to /api/merchant/add-user when ready
     const handleAddUser = () => {
-        console.log("Add user – endpoint not implemented yet", selectedMerchant?.id);
+        if (!selectedMerchant?.id) return;
+        openAddModal();
+    };
+
+    const openAddModal = () => {
+        setAddingUser(true);
+        setAddUserUsername("");
+        setAddUserRole(ROLES[0] || "");
+        setAddError(null);
+    };
+
+    const closeAddModal = () => {
+        setAddingUser(false);
+        setAddUserUsername("");
+        setAddUserRole("");
+        setAddError(null);
+    };
+
+    const handleSaveAddUser = async () => {
+        if (!selectedMerchant?.id) return;
+        const trimmedUsername = addUserUsername.trim();
+        if (!trimmedUsername || !addUserRole) {
+            setAddError("Username and role are required.");
+            return;
+        }
+        setAddSaving(true);
+        setAddError(null);
+        try {
+            const res = await fetch("/api/merchant/add-user", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    merchant_id: selectedMerchant.id,
+                    user_username: trimmedUsername,
+                    role: addUserRole,
+                }),
+            });
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(text || "Failed to add user");
+            }
+
+            // Refresh merchant users list
+            try {
+                const usersRes = await fetch(
+                    `/api/merchant/get-merchant-users?merchant_id=${encodeURIComponent(selectedMerchant.id)}`
+                );
+                if (usersRes.ok) {
+                    const usersData = await usersRes.json();
+                    setMerchantUsers(Array.isArray(usersData) ? usersData : []);
+                }
+            } catch {
+                // ignore refresh errors; user was still created
+            }
+
+            closeAddModal();
+        } catch (err) {
+            setAddError(err.message || "Failed to add user");
+        } finally {
+            setAddSaving(false);
+        }
     };
 
     // edit stuff is also placeholder, edit endpoint not done yet
@@ -100,7 +165,7 @@ export default function Users() {
         setEditSaving(true);
         setEditError(null);
         try {
-            // TODO: replace with real call when POST /api/merchant/edit-user-role is ready
+            // TODO: replace with real call when PATCH /api/merchant/edit-user-role is ready
             const res = await fetch("/api/merchant/edit-user-role", {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
@@ -136,7 +201,7 @@ export default function Users() {
                 user_id: editingUser.user_id,
             });
             closeEditModal();
-            setMerchantUsers((prev) => prev.filter((u) => u.user_id !== editingUser.user_id));
+            // setMerchantUsers((prev) => prev.filter((u) => u.user_id !== editingUser.user_id));
         } catch (err) {
             setEditError(err.message);
         } finally {
@@ -285,6 +350,55 @@ export default function Users() {
                                 Remove from merchant
                             </button>
                             <button type="button" className="users-btn-cancel" onClick={closeEditModal}>
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {addingUser && (
+                <div className="users-modal-backdrop" onClick={closeAddModal}>
+                    <div className="users-modal" onClick={(e) => e.stopPropagation()}>
+                        <h3>Add user</h3>
+                        <div className="form-group">
+                            <label>Username</label>
+                            <input
+                                type="text"
+                                value={addUserUsername}
+                                onChange={(e) => setAddUserUsername(e.target.value)}
+                                placeholder="Enter username"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>Role</label>
+                            <select
+                                value={addUserRole}
+                                onChange={(e) => setAddUserRole(e.target.value)}
+                            >
+                                <option value="">Select a role</option>
+                                {ROLES.map((r) => (
+                                    <option key={r} value={r}>
+                                        {r}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        {addError && <p className="users-modal-error">{addError}</p>}
+                        <div className="users-modal-actions">
+                            <button
+                                type="button"
+                                className="users-btn-save"
+                                onClick={handleSaveAddUser}
+                                disabled={addSaving || !addUserUsername.trim() || !addUserRole}
+                            >
+                                {addSaving ? "Adding…" : "Add user"}
+                            </button>
+                            <button
+                                type="button"
+                                className="users-btn-cancel"
+                                onClick={closeAddModal}
+                                disabled={addSaving}
+                            >
                                 Cancel
                             </button>
                         </div>

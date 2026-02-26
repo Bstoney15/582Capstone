@@ -7,6 +7,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -51,21 +52,105 @@ func (h *Handler) GetMerchantsHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(merchantResponses)
 }
 
+// defines if these roles are allowed to be set
+var allowedRoles = map[string]bool{
+	models.RoleAdmin: true, models.RoleDeveloper: true, models.RoleOwner: false,
+}
+
 func (h *Handler) AddUserHandler(w http.ResponseWriter, r *http.Request) {
-	// auth copied from GetMerchantsHandler func
 	sessionToken, err := sessionManager.GetSessionToken(r)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-	// may need to replace first _ with sessionData
-	_, _, active := sessionManager.CheckSession(sessionToken)
+	sessionData, _, active := sessionManager.CheckSession(sessionToken)
 	if !active {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-	// TODO add logic for adding user...
 
+	type AddUserRequest struct {
+		MerchantID   string `json:"merchant_id"`
+		UserUsername string `json:"user_username"`
+		Role         string `json:"role"`
+	}
+
+	var requestBody AddUserRequest
+	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+		http.Error(w, "Error parsing request", http.StatusBadRequest)
+		return
+	}
+
+	if requestBody.MerchantID == "" || requestBody.UserUsername == "" || requestBody.Role == "" {
+		http.Error(w, "merchant_id, user_username, and role are required", http.StatusBadRequest)
+		return
+	}
+
+	if !allowedRoles[requestBody.Role] {
+		http.Error(w, "Invalid role", http.StatusBadRequest)
+		return
+	}
+
+	// Require caller to be Admin or Owner for this merchant
+	var callerRole models.Role
+	if err := h.DB.Where("role_merchant_id = ? AND role_user_id = ? AND role_name IN ?",
+		requestBody.MerchantID, sessionData.UserID, []string{models.RoleAdmin, models.RoleOwner}).First(&callerRole).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+		http.Error(w, "Failed to check permissions", http.StatusInternalServerError)
+		return
+	}
+
+	// Verify merchant exists
+	var merchant models.Merchant
+	if err := h.DB.Where("merchant_id = ?", requestBody.MerchantID).First(&merchant).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "Merchant not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Failed to verify merchant", http.StatusInternalServerError)
+		return
+	}
+
+	var user models.User
+	if err := h.DB.Where("user_username = ?", requestBody.UserUsername).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "No user found with that username", http.StatusBadRequest)
+			return
+		}
+		http.Error(w, "Failed to lookup user", http.StatusInternalServerError)
+		return
+	}
+
+	// Avoid duplicate: user already has a role for this merchant
+	var existing models.Role
+	if err := h.DB.Where("role_merchant_id = ? AND role_user_id = ?", requestBody.MerchantID, user.UserID).First(&existing).Error; err == nil {
+		http.Error(w, "User already has a role for this merchant", http.StatusConflict)
+		return
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		http.Error(w, "Failed to check existing role", http.StatusInternalServerError)
+		return
+	}
+
+	role := &models.Role{
+		RoleID:         uuid.New().String(),
+		RoleMerchantID: requestBody.MerchantID,
+		RoleUserID:     user.UserID,
+		RoleName:       requestBody.Role,
+	}
+	if err := h.DB.Create(role).Error; err != nil {
+		http.Error(w, "Failed to add user to merchant", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"role_id": role.RoleID,
+		"message": "User added to merchant",
+	})
 }
 
 func (h *Handler) EditUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -98,7 +183,6 @@ func (h *Handler) GetAllMerchantUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO add logic for getting all users associated with a given merchant
 	merchantID := r.URL.Query().Get("merchant_id")
 	if merchantID == "" {
 		http.Error(w, "merchant_id query parameter needed", http.StatusBadRequest)
