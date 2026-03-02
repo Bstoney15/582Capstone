@@ -191,3 +191,8 @@
   margin-top: 0.25rem;
   text-align: left;
 }
+
+.authenticated-content-wrapper {
+  width: 100%;
+  text-align: left;
+}
