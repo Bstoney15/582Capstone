@@ -5,7 +5,7 @@ export default function Home() {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <div className="auth-page">
+    <div className="auth-page home-page">
       {toggleTheme && (
         <button
           type="button"
@@ -14,31 +14,13 @@ export default function Home() {
           title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
           aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
         >
-          {theme === "dark" ? "☀️" : "🌙"}
+          {theme === "dark" ? "Light" : "Dark"}
         </button>
       )}
 
       <div className="auth-card home-card">
         <h1 className="auth-title">XRPay</h1>
-        <p className="auth-subtitle">Accept XRP. Receive USDC.</p>
-
-        <div className="home-content">
-          <div className="home-feature">
-            <span className="home-icon">💱</span>
-            <p>Customers pay in XRP. You receive USDC automatically—no crypto to manage.</p>
-          </div>
-
-          <div className="home-feature">
-            <span className="home-icon">⚡</span>
-            <p>Drop a lightweight widget on your checkout page and start accepting payments in minutes.</p>
-          </div>
-
-          <div className="home-feature">
-            <span className="home-icon">📊</span>
-            <p>Track transactions, manage API keys, and configure webhooks from one simple dashboard.</p>
-          </div>
-        </div>
-
+        <p className="auth-subtitle">Choose an option to continue</p>
         <div className="home-actions">
           <Link className="home-button home-button-primary" to="/signup">
             Create Account

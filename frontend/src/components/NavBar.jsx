@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
 import { useMerchant } from "../contexts/MerchantContext";
 import { useTheme } from "../contexts/ThemeContext";
 import Dropdown from "./Dropdown";
@@ -8,7 +7,6 @@ import { UserCircleIcon, SunIcon, MoonIcon } from "@heroicons/react/24/outline";
 import "./NavBar.css";
 
 export default function NavBar() {
-    const { checkAuthStatus } = useAuth();
     const { merchants, selectedMerchant, setSelectedMerchant, requireRole } = useMerchant();
     const { theme, toggleTheme } = useTheme();
     const navigate = useNavigate();
@@ -34,7 +32,10 @@ export default function NavBar() {
 
     return (
         <nav className="navbar-container">
-            <div className="navbar-brand">XRPay</div>
+            <Link to="/dashboard" className="navbar-brand-wrap" aria-label="Go to dashboard">
+                <div className="navbar-brand">XRPay</div>
+                <span className="navbar-brand-subtitle">Merchant Console</span>
+            </Link>
             <div className="navbar-links">
                 <Link to="/dashboard" className="navbar-link">Dashboard</Link>
                 {selectedMerchant && (

@@ -87,15 +87,15 @@ export default function Dashboard() {
                         <ul className="dashboard-activity-list">
                             <li>
                                 <p className="dashboard-activity-title">Merchant session verified</p>
-                                <p className="dashboard-activity-meta">Now · Authentication service</p>
+                                <p className="dashboard-activity-meta">Now - Authentication service</p>
                             </li>
                             <li>
                                 <p className="dashboard-activity-title">Webhook delivery monitoring enabled</p>
-                                <p className="dashboard-activity-meta">Today · Integrations</p>
+                                <p className="dashboard-activity-meta">Today - Integrations</p>
                             </li>
                             <li>
                                 <p className="dashboard-activity-title">API key access reviewed</p>
-                                <p className="dashboard-activity-meta">Yesterday · Security</p>
+                                <p className="dashboard-activity-meta">Yesterday - Security</p>
                             </li>
                         </ul>
                     </div>
