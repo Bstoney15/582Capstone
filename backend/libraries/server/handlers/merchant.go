@@ -34,6 +34,29 @@ func (h *Handler) CreateMerchantHandler(w http.ResponseWriter, r *http.Request) 
 
 	type CreateMerchantRequest struct {
 		MerchantName string `json:"merchant_name"`
+
+		MerchantBusinessProfileDBAName            string `json:"merchant_business_profile_dba_name"`
+		MerchantBusinessProfileRegistrationNumber string `json:"merchant_business_profile_registration_number"`
+		MerchantBusinessProfileTaxID              string `json:"merchant_business_profile_tax_id"`
+		MerchantBusinessProfileWebsiteURL         string `json:"merchant_business_profile_website_url"`
+		MerchantBusinessProfileIncoporationDate   string `json:"merchant_business_profile_incoporation_date"`
+		MerchantBusinessProfileLegalStructure     string `json:"merchant_business_profile_legal_structure"`
+		MerchantBusinessProfileMCCCode            string `json:"merchant_business_profile_mcc_code"`
+		MerchantBusinessProfilePhoneNumber        string `json:"merchant_business_profile_phone_number"`
+		MerchantBusinessProfileEmail              string `json:"merchant_business_profile_email"`
+
+		MerchantAddressLine1      string `json:"merchant_address_line_1"`
+		MerchantAddressLine2      string `json:"merchant_address_line_2"`
+		MerchantAddressCity       string `json:"merchant_address_city"`
+		MerchantAddressState      string `json:"merchant_address_state"`
+		MerchantAddressPostalCode int    `json:"merchant_address_postal_code"`
+
+		MerchantOwnerFirstName   string `json:"merchant_owner_first_name"`
+		MerchantOwnerLastName    string `json:"merchant_owner_last_name"`
+		MerchantOwnerPhoneNumber string `json:"merchant_owner_phone_number"`
+		MerchantOwnerEmail       string `json:"merchant_owner_email"`
+		MerchantOwnerDOB         string `json:"merchant_owner_dob"`
+		MerchantOwnerStake       string `json:"merchant_owner_stake"`
 	}
 
 	var requestBody CreateMerchantRequest
@@ -42,8 +65,40 @@ func (h *Handler) CreateMerchantHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if requestBody.MerchantName == "" {
-		http.Error(w, "merchant_name is required", http.StatusBadRequest)
+	if requestBody.MerchantName == "" ||
+		requestBody.MerchantBusinessProfileDBAName == "" ||
+		requestBody.MerchantBusinessProfileRegistrationNumber == "" ||
+		requestBody.MerchantBusinessProfileTaxID == "" ||
+		requestBody.MerchantBusinessProfileWebsiteURL == "" ||
+		requestBody.MerchantBusinessProfileIncoporationDate == "" ||
+		requestBody.MerchantBusinessProfileLegalStructure == "" ||
+		requestBody.MerchantBusinessProfileMCCCode == "" ||
+		requestBody.MerchantBusinessProfilePhoneNumber == "" ||
+		requestBody.MerchantBusinessProfileEmail == "" ||
+		requestBody.MerchantAddressLine1 == "" ||
+		requestBody.MerchantAddressLine2 == "" ||
+		requestBody.MerchantAddressCity == "" ||
+		requestBody.MerchantAddressState == "" ||
+		requestBody.MerchantAddressPostalCode == 0 ||
+		requestBody.MerchantOwnerFirstName == "" ||
+		requestBody.MerchantOwnerLastName == "" ||
+		requestBody.MerchantOwnerPhoneNumber == "" ||
+		requestBody.MerchantOwnerEmail == "" ||
+		requestBody.MerchantOwnerDOB == "" ||
+		requestBody.MerchantOwnerStake == "" {
+		http.Error(w, "All merchant, business profile, address, and owner fields are required", http.StatusBadRequest)
+		return
+	}
+
+	parsedOwnerDOB, err := time.Parse("2006-01-02", requestBody.MerchantOwnerDOB)
+	if err != nil {
+		http.Error(w, "merchant_owner_dob must be in YYYY-MM-DD format", http.StatusBadRequest)
+		return
+	}
+
+	parsedOwnerStake, err := decimal.NewFromString(requestBody.MerchantOwnerStake)
+	if err != nil {
+		http.Error(w, "merchant_owner_stake must be a valid decimal string", http.StatusBadRequest)
 		return
 	}
 
@@ -59,6 +114,9 @@ func (h *Handler) CreateMerchantHandler(w http.ResponseWriter, r *http.Request) 
 
 	merchantID := uuid.New().String()
 	roleID := uuid.New().String()
+	profileID := uuid.New().String()
+	addressID := uuid.New().String()
+	ownerID := uuid.New().String()
 
 	err = h.DB.Transaction(func(tx *gorm.DB) error {
 		merchant := models.Merchant{
@@ -79,6 +137,51 @@ func (h *Handler) CreateMerchantHandler(w http.ResponseWriter, r *http.Request) 
 			return err
 		}
 
+		profile := models.MerchantBusinessProfile{
+			MerchantBusinessProfileID:                 profileID,
+			MerchantBusinessProfileMerchantID:         merchantID,
+			MerchantBusinessProfileDBAName:            requestBody.MerchantBusinessProfileDBAName,
+			MerchantBusinessProfileRegistrationNumber: requestBody.MerchantBusinessProfileRegistrationNumber,
+			MerchantBusinessProfileTaxID:              requestBody.MerchantBusinessProfileTaxID,
+			MerchantBusinessProfileWebsiteURL:         requestBody.MerchantBusinessProfileWebsiteURL,
+			MerchantBusinessProfileIncoporationDate:   requestBody.MerchantBusinessProfileIncoporationDate,
+			MerchantBusinessProfileLegalStructure:     requestBody.MerchantBusinessProfileLegalStructure,
+			MerchantBusinessProfileMCCCode:            requestBody.MerchantBusinessProfileMCCCode,
+			MerchantBusinessProfilePhoneNumber:        requestBody.MerchantBusinessProfilePhoneNumber,
+			MerchantBusinessProfileEmail:              requestBody.MerchantBusinessProfileEmail,
+		}
+		if err := tx.Create(&profile).Error; err != nil {
+			return err
+		}
+
+		address := models.MerchantAddress{
+			MerchantAddressID:         addressID,
+			MerchantAddressMerchantID: merchantID,
+			MerchantAddressLine1:      requestBody.MerchantAddressLine1,
+			MerchantAddressLine2:      requestBody.MerchantAddressLine2,
+			MerchantAddressCity:       requestBody.MerchantAddressCity,
+			MerchantAddressState:      requestBody.MerchantAddressState,
+			MerchantAddressPostalCode: requestBody.MerchantAddressPostalCode,
+			MerchantAddressVerified:   false,
+		}
+		if err := tx.Create(&address).Error; err != nil {
+			return err
+		}
+
+		owner := models.MerchantOwner{
+			MerchantOwnerID:          ownerID,
+			MerchantOwnerMerchantID:  merchantID,
+			MerchantOwnerFirstName:   requestBody.MerchantOwnerFirstName,
+			MerchantOwnerLastName:    requestBody.MerchantOwnerLastName,
+			MerchantOwnerPhoneNumber: requestBody.MerchantOwnerPhoneNumber,
+			MerchantOwnerEmail:       requestBody.MerchantOwnerEmail,
+			MerchantOwnerDOB:         parsedOwnerDOB,
+			MerchantOwnerStake:       parsedOwnerStake,
+		}
+		if err := tx.Create(&owner).Error; err != nil {
+			return err
+		}
+
 		return nil
 	})
 
@@ -90,336 +193,13 @@ func (h *Handler) CreateMerchantHandler(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"merchant_id": merchantID,
-		"role_id":     roleID,
-		"role":        models.RoleOwner,
-		"message":     "Merchant created and owner role assigned",
-	})
-}
-
-func (h *Handler) requireMerchantAccess(merchantID string, userID string) error {
-	if merchantID == "" || userID == "" {
-		return errors.New("missing merchant_id or user_id")
-	}
-
-	var merchant models.Merchant
-	if err := h.DB.Where("merchant_id = ?", merchantID).First(&merchant).Error; err != nil {
-		return err
-	}
-
-	var callerRole models.Role
-	if err := h.DB.Where("role_merchant_id = ? AND role_user_id = ?", merchantID, userID).First(&callerRole).Error; err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (h *Handler) CreateMerchantOwnerHandler(w http.ResponseWriter, r *http.Request) {
-	sessionToken, err := sessionManager.GetSessionToken(r)
-	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	sessionData, _, active := sessionManager.CheckSession(sessionToken)
-	if !active {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	type CreateMerchantOwnerRequest struct {
-		MerchantID  string `json:"merchant_id"`
-		FirstName   string `json:"first_name"`
-		LastName    string `json:"last_name"`
-		PhoneNumber string `json:"phone_number"`
-		Email       string `json:"email"`
-		DOB         string `json:"dob"`
-		Stake       string `json:"stake"`
-	}
-
-	var requestBody CreateMerchantOwnerRequest
-	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
-		http.Error(w, "Error parsing request", http.StatusBadRequest)
-		return
-	}
-
-	if requestBody.MerchantID == "" || requestBody.FirstName == "" || requestBody.LastName == "" || requestBody.PhoneNumber == "" || requestBody.Email == "" || requestBody.DOB == "" || requestBody.Stake == "" {
-		http.Error(w, "merchant_id, first_name, last_name, phone_number, email, dob, and stake are required", http.StatusBadRequest)
-		return
-	}
-
-	if err := h.requireMerchantAccess(requestBody.MerchantID, sessionData.UserID); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			http.Error(w, "Forbidden", http.StatusForbidden)
-			return
-		}
-		http.Error(w, "Failed to verify merchant and permissions", http.StatusInternalServerError)
-		return
-	}
-
-	parsedDOB, err := time.Parse("2006-01-02", requestBody.DOB)
-	if err != nil {
-		http.Error(w, "dob must be in YYYY-MM-DD format", http.StatusBadRequest)
-		return
-	}
-
-	parsedStake, err := decimal.NewFromString(requestBody.Stake)
-	if err != nil {
-		http.Error(w, "stake must be a valid decimal string", http.StatusBadRequest)
-		return
-	}
-
-	var owner models.MerchantOwner
-	err = h.DB.Where("merchant_owner_merchant_id = ?", requestBody.MerchantID).First(&owner).Error
-	if err == nil {
-		owner.MerchantOwnerFirstName = requestBody.FirstName
-		owner.MerchantOwnerLastName = requestBody.LastName
-		owner.MerchantOwnerPhoneNumber = requestBody.PhoneNumber
-		owner.MerchantOwnerEmail = requestBody.Email
-		owner.MerchantOwnerDOB = parsedDOB
-		owner.MerchantOwnerStake = parsedStake
-		if err := h.DB.Save(&owner).Error; err != nil {
-			http.Error(w, "Failed to update merchant owner", http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"merchant_owner_id": owner.MerchantOwnerID,
-			"message":           "Merchant owner updated",
-		})
-		return
-	}
-
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		http.Error(w, "Failed to check existing merchant owner", http.StatusInternalServerError)
-		return
-	}
-
-	owner = models.MerchantOwner{
-		MerchantOwnerID:          uuid.New().String(),
-		MerchantOwnerMerchantID:  requestBody.MerchantID,
-		MerchantOwnerFirstName:   requestBody.FirstName,
-		MerchantOwnerLastName:    requestBody.LastName,
-		MerchantOwnerPhoneNumber: requestBody.PhoneNumber,
-		MerchantOwnerEmail:       requestBody.Email,
-		MerchantOwnerDOB:         parsedDOB,
-		MerchantOwnerStake:       parsedStake,
-	}
-
-	if err := h.DB.Create(&owner).Error; err != nil {
-		http.Error(w, "Failed to create merchant owner", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"merchant_owner_id": owner.MerchantOwnerID,
-		"message":           "Merchant owner created",
-	})
-}
-
-func (h *Handler) CreateMerchantBusinessProfileHandler(w http.ResponseWriter, r *http.Request) {
-	sessionToken, err := sessionManager.GetSessionToken(r)
-	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	sessionData, _, active := sessionManager.CheckSession(sessionToken)
-	if !active {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	type CreateMerchantBusinessProfileRequest struct {
-		MerchantID         string `json:"merchant_id"`
-		DBAName            string `json:"dba_name"`
-		RegistrationNumber string `json:"registration_number"`
-		TaxID              string `json:"tax_id"`
-		WebsiteURL         string `json:"website_url"`
-		IncoporationDate   string `json:"incoporation_date"`
-		LegalStructure     string `json:"legal_structure"`
-		MCCCode            string `json:"mcc_code"`
-		PhoneNumber        string `json:"phone_number"`
-		Email              string `json:"email"`
-	}
-
-	var requestBody CreateMerchantBusinessProfileRequest
-	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
-		http.Error(w, "Error parsing request", http.StatusBadRequest)
-		return
-	}
-
-	if requestBody.MerchantID == "" || requestBody.DBAName == "" || requestBody.RegistrationNumber == "" || requestBody.TaxID == "" || requestBody.WebsiteURL == "" || requestBody.IncoporationDate == "" || requestBody.LegalStructure == "" || requestBody.MCCCode == "" || requestBody.PhoneNumber == "" || requestBody.Email == "" {
-		http.Error(w, "merchant_id, dba_name, registration_number, tax_id, website_url, incoporation_date, legal_structure, mcc_code, phone_number, and email are required", http.StatusBadRequest)
-		return
-	}
-
-	if err := h.requireMerchantAccess(requestBody.MerchantID, sessionData.UserID); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			http.Error(w, "Forbidden", http.StatusForbidden)
-			return
-		}
-		http.Error(w, "Failed to verify merchant and permissions", http.StatusInternalServerError)
-		return
-	}
-
-	var profile models.MerchantBusinessProfile
-	err = h.DB.Where("merchant_business_profile_merchant_id = ?", requestBody.MerchantID).First(&profile).Error
-	if err == nil {
-		profile.MerchantBusinessProfileDBAName = requestBody.DBAName
-		profile.MerchantBusinessProfileRegistrationNumber = requestBody.RegistrationNumber
-		profile.MerchantBusinessProfileTaxID = requestBody.TaxID
-		profile.MerchantBusinessProfileWebsiteURL = requestBody.WebsiteURL
-		profile.MerchantBusinessProfileIncoporationDate = requestBody.IncoporationDate
-		profile.MerchantBusinessProfileLegalStructure = requestBody.LegalStructure
-		profile.MerchantBusinessProfileMCCCode = requestBody.MCCCode
-		profile.MerchantBusinessProfilePhoneNumber = requestBody.PhoneNumber
-		profile.MerchantBusinessProfileEmail = requestBody.Email
-
-		if err := h.DB.Save(&profile).Error; err != nil {
-			http.Error(w, "Failed to update merchant business profile", http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"merchant_business_profile_id": profile.MerchantBusinessProfileID,
-			"message":                      "Merchant business profile updated",
-		})
-		return
-	}
-
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		http.Error(w, "Failed to check existing merchant business profile", http.StatusInternalServerError)
-		return
-	}
-
-	profile = models.MerchantBusinessProfile{
-		MerchantBusinessProfileID:                 uuid.New().String(),
-		MerchantBusinessProfileMerchantID:         requestBody.MerchantID,
-		MerchantBusinessProfileDBAName:            requestBody.DBAName,
-		MerchantBusinessProfileRegistrationNumber: requestBody.RegistrationNumber,
-		MerchantBusinessProfileTaxID:              requestBody.TaxID,
-		MerchantBusinessProfileWebsiteURL:         requestBody.WebsiteURL,
-		MerchantBusinessProfileIncoporationDate:   requestBody.IncoporationDate,
-		MerchantBusinessProfileLegalStructure:     requestBody.LegalStructure,
-		MerchantBusinessProfileMCCCode:            requestBody.MCCCode,
-		MerchantBusinessProfilePhoneNumber:        requestBody.PhoneNumber,
-		MerchantBusinessProfileEmail:              requestBody.Email,
-	}
-
-	if err := h.DB.Create(&profile).Error; err != nil {
-		http.Error(w, "Failed to create merchant business profile", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"merchant_business_profile_id": profile.MerchantBusinessProfileID,
-		"message":                      "Merchant business profile created",
-	})
-}
-
-func (h *Handler) CreateMerchantAddressHandler(w http.ResponseWriter, r *http.Request) {
-	sessionToken, err := sessionManager.GetSessionToken(r)
-	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	sessionData, _, active := sessionManager.CheckSession(sessionToken)
-	if !active {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	type CreateMerchantAddressRequest struct {
-		MerchantID string `json:"merchant_id"`
-		Line1      string `json:"line_1"`
-		Line2      string `json:"line_2"`
-		City       string `json:"city"`
-		State      string `json:"state"`
-		PostalCode int    `json:"postal_code"`
-		Verified   bool   `json:"verified"`
-	}
-
-	var requestBody CreateMerchantAddressRequest
-	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
-		http.Error(w, "Error parsing request", http.StatusBadRequest)
-		return
-	}
-
-	if requestBody.MerchantID == "" || requestBody.Line1 == "" || requestBody.Line2 == "" || requestBody.City == "" || requestBody.State == "" || requestBody.PostalCode == 0 {
-		http.Error(w, "merchant_id, line_1, line_2, city, state, and postal_code are required", http.StatusBadRequest)
-		return
-	}
-
-	if err := h.requireMerchantAccess(requestBody.MerchantID, sessionData.UserID); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			http.Error(w, "Forbidden", http.StatusForbidden)
-			return
-		}
-		http.Error(w, "Failed to verify merchant and permissions", http.StatusInternalServerError)
-		return
-	}
-
-	var address models.MerchantAddress
-	err = h.DB.Where("merchant_address_merchant_id = ?", requestBody.MerchantID).First(&address).Error
-	if err == nil {
-		address.MerchantAddressLine1 = requestBody.Line1
-		address.MerchantAddressLine2 = requestBody.Line2
-		address.MerchantAddressCity = requestBody.City
-		address.MerchantAddressState = requestBody.State
-		address.MerchantAddressPostalCode = requestBody.PostalCode
-		address.MerchantAddressVerified = requestBody.Verified
-
-		if err := h.DB.Save(&address).Error; err != nil {
-			http.Error(w, "Failed to update merchant address", http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"merchant_address_id": address.MerchantAddressID,
-			"message":             "Merchant address updated",
-		})
-		return
-	}
-
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		http.Error(w, "Failed to check existing merchant address", http.StatusInternalServerError)
-		return
-	}
-
-	address = models.MerchantAddress{
-		MerchantAddressID:         uuid.New().String(),
-		MerchantAddressMerchantID: requestBody.MerchantID,
-		MerchantAddressLine1:      requestBody.Line1,
-		MerchantAddressLine2:      requestBody.Line2,
-		MerchantAddressCity:       requestBody.City,
-		MerchantAddressState:      requestBody.State,
-		MerchantAddressPostalCode: requestBody.PostalCode,
-		MerchantAddressVerified:   requestBody.Verified,
-	}
-
-	if err := h.DB.Create(&address).Error; err != nil {
-		http.Error(w, "Failed to create merchant address", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"merchant_address_id": address.MerchantAddressID,
-		"message":             "Merchant address created",
+		"merchant_id":                  merchantID,
+		"role_id":                      roleID,
+		"merchant_business_profile_id": profileID,
+		"merchant_address_id":          addressID,
+		"merchant_owner_id":            ownerID,
+		"role":                         models.RoleOwner,
+		"message":                      "Merchant created with profile, address, and owner",
 	})
 }
 

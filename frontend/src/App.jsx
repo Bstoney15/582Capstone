@@ -10,6 +10,7 @@ import Login from "./pages/Login/Login.jsx";
 import Signup from "./pages/Signup/Signup.jsx";
 import Webhooks from "./pages/Webhooks/Webhooks.jsx";
 import ApiKeys from "./pages/ApiKeys/ApiKeys.jsx";
+import CreateMerchant from "./pages/CreateMerchant/CreateMerchant.jsx";
 import Wallet from "./pages/Wallet/Wallet.jsx";
 import Users from "./pages/Users/Users.jsx";
 import "./App.css";
@@ -33,6 +34,10 @@ const router = createBrowserRouter([
       {
         element: <ProtectedRoute />,
         children: [
+          {
+            path: "/create-merchant",
+            element: <CreateMerchant />
+          },
           {
             path: "/dashboard",
             element: <Dashboard />
