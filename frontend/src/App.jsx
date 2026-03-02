@@ -32,12 +32,12 @@ const router = createBrowserRouter([
         element: <Signup />
       },
       {
-        path: "/create-merchant",
-        element: <CreateMerchant />
-      },
-      {
         element: <ProtectedRoute />,
         children: [
+          {
+            path: "/create-merchant",
+            element: <CreateMerchant />
+          },
           {
             path: "/dashboard",
             element: <Dashboard />

@@ -31,14 +31,12 @@ export default function Kyb() {
     merchant_owner_phone_number: "",
     merchant_owner_email: "",
     merchant_owner_dob: "", // send as ISO date string (YYYY-MM-DD)
-    merchant_owner_stake: "", // decimal as string
-
-    // merchant_crypto_wallet
-    merchant_crypto_wallet_address: "",
-    merchant_crypto_wallet_verified: false // typically backend-controlled
+    merchant_owner_stake: "" // decimal as string
   });
 
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   function handleChange(e) {
     const { name, value, type, checked } = e.target;
@@ -67,7 +65,6 @@ export default function Kyb() {
       "merchant_business_profile_email",
 
       "merchant_address_line_1",
-      "merchant_address_line_2",
       "merchant_address_city",
       "merchant_address_state",
       "merchant_address_postal_code",
@@ -77,19 +74,19 @@ export default function Kyb() {
       "merchant_owner_phone_number",
       "merchant_owner_email",
       "merchant_owner_dob",
-      "merchant_owner_stake",
-
-      "merchant_crypto_wallet_address"
+      "merchant_owner_stake"
     ];
 
     for (const key of requiredFields) {
       if (!String(form[key] ?? "").trim()) {
+        setSuccessMessage("");
         setError("Please complete all required fields.");
         return;
       }
     }
 
     setError("");
+    setSuccessMessage("");
 
     // If you want postal code as a number to match int:
     const payload = {
@@ -97,10 +94,30 @@ export default function Kyb() {
       merchant_address_postal_code: Number(form.merchant_address_postal_code)
     };
 
-    console.log("KYB payload:", payload);
-
-    // Later: POST payload to backend endpoint(s)
-    // Example: POST /api/kyb or /api/merchant/onboard
+    setIsSubmitting(true);
+    fetch("/api/merchant/create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          const text = await response.text();
+          throw new Error(text || "Failed to create merchant");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        setSuccessMessage(`Merchant created successfully (ID: ${data.merchant_id})`);
+      })
+      .catch((err) => {
+        setError(err.message || "Failed to create merchant");
+      })
+      .finally(() => {
+        setIsSubmitting(false);
+      });
   }
 
   return (
@@ -387,29 +404,15 @@ export default function Kyb() {
             />
           </div>
 
-          <SectionTitle>Payout wallet</SectionTitle>
-
-          <div className="form-group">
-            <label htmlFor="merchant_crypto_wallet_address">Wallet address</label>
-            <input
-              id="merchant_crypto_wallet_address"
-              name="merchant_crypto_wallet_address"
-              type="text"
-              value={form.merchant_crypto_wallet_address}
-              onChange={handleChange}
-              required
-              placeholder="Your receiving wallet address"
-            />
-          </div>
-
           {error && <p style={{ color: "red", margin: 0 }}>{error}</p>}
+          {successMessage && <p style={{ color: "green", margin: 0 }}>{successMessage}</p>}
 
-          <button className="auth-button" type="submit">
-            Submit KYB
+          <button className="auth-button" type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Submitting..." : "Create Merchant"}
           </button>
 
           <p className="auth-footer">
-            Back to <Link to="/">Home</Link>
+            Back to <Link to="/dashboard">Home</Link>
           </p>
         </form>
       </div>
