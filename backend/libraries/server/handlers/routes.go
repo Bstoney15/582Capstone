@@ -21,9 +21,19 @@ All api routes must be defined in this file. All routes must also be prefixed wi
 try to group routes by functionality and authentication requirements
 */
 func (h *Handler) RegisterRoutes(s *http.ServeMux) {
+	// Widget Static Routes
+	s.HandleFunc("GET /widget/checkout.js", h.GetCheckoutWidget)
 
 	// No Auth Routes
 	s.HandleFunc("GET /api/health", h.HealthCheckHandler)
+	s.HandleFunc("POST /api/invoices", h.CreateInvoiceHandler)
+	s.HandleFunc("GET /api/invoices/{uuid}", h.GetInvoiceForCheckoutHandler)
+	s.HandleFunc("GET /api/invoices/{uuid}/events", h.StreamInvoiceEventsHandler)
+	s.HandleFunc("POST /api/verify", h.VerifyInvoicePaymentHandler)
+	s.HandleFunc("OPTIONS /api/invoices", h.WidgetPreflightHandler)
+	s.HandleFunc("OPTIONS /api/invoices/{uuid}", h.WidgetPreflightHandler)
+	s.HandleFunc("OPTIONS /api/invoices/{uuid}/events", h.WidgetPreflightHandler)
+	s.HandleFunc("OPTIONS /api/verify", h.WidgetPreflightHandler)
 
 	s.HandleFunc("POST /api/user/login", h.LoginHandler)
 	s.HandleFunc("POST /api/user/signup", h.SignupHandler)

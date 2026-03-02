@@ -8,6 +8,7 @@ import Settings from "./pages/Settings/Settings.jsx";
 import Home from "./pages/Home/Home.jsx";
 import Login from "./pages/Login/Login.jsx";
 import Signup from "./pages/Signup/Signup.jsx";
+import WidgetDemo from "./pages/WidgetDemo/WidgetDemo.jsx";
 import Webhooks from "./pages/Webhooks/Webhooks.jsx";
 import ApiKeys from "./pages/ApiKeys/ApiKeys.jsx";
 import CreateMerchant from "./pages/CreateMerchant/CreateMerchant.jsx";
@@ -30,6 +31,10 @@ const router = createBrowserRouter([
       {
         path: "/signup",
         element: <Signup />
+      },
+      {
+        path: "/widget-demo",
+        element: <WidgetDemo />
       },
       {
         element: <ProtectedRoute />,

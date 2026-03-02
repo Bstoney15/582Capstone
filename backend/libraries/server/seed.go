@@ -34,7 +34,7 @@ const (
 	seedUserPasswordPlain = "password"
 	seedApiKeyHash        = "dev_api_key_hash"
 	seedWebhookKey        = "dev_webhook_key"
-	seedWalletAddress     = "0x1111111111111111111111111111111111111111"
+	seedWalletAddress     = "rG3BgRh1xGaySMtvLoz35UZdTg15Htgi6j"
 	seedDateLayout        = "2006-01-02"
 )
 
@@ -96,10 +96,17 @@ func (s *Server) SeedDevData() error {
 	var existingMerchant models.Merchant
 	err := s.DB.Where("merchant_id = ?", seedMerchantID).First(&existingMerchant).Error
 	if err == nil {
-		log.Printf("Seed skipped: merchant %s already exists", seedMerchantID)
+		if updateErr := s.DB.Model(&models.MerchantCryptoWallet{}).
+			Where("merchant_crypto_wallet_id = ?", seedMerchantWalletID).
+			Update("merchant_crypto_wallet_address", seedWalletAddress).Error; updateErr != nil {
+			return updateErr
+		}
+
+		log.Printf("Seed exists: updated wallet address for merchant %s", seedMerchantID)
 		return nil
 	}
-	if err != nil && err != gorm.ErrRecordNotFound {
+
+	if err != gorm.ErrRecordNotFound {
 		return err
 	}
 
