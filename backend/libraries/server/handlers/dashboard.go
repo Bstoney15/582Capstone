@@ -1,42 +1,136 @@
 package routes
 
 import (
+	"backend/models"
 	"encoding/json"
 	"net/http"
+	"time"
+
+	"github.com/shopspring/decimal"
+	"gorm.io/gorm"
 )
 
 type DashboardResponse struct {
-	Stats struct {
-		GrossVolume30d int `json:"grossVolume30d"`
-		GrossVolume6m  int `json:"grossVolume6m"`
-		GrossVolume1y  int `json:"grossVolume1y"`
-	} `json:"stats"`
-
-	RecentActivity []Activity `json:"recentActivity"`
+	Stats          DashboardGrossVolumeStats  `json:"stats"`
+	RecentActivity []DashboardInvoiceActivity `json:"recentActivity"`
 }
 
-type Activity struct {
+type DashboardGrossVolumeStats struct {
+	GrossVolume30d int `json:"grossVolume30d"`
+	GrossVolume6m  int `json:"grossVolume6m"`
+	GrossVolume1y  int `json:"grossVolume1y"`
+}
+
+type DashboardInvoiceActivity struct {
 	ID       string `json:"id"`
 	Amount   int    `json:"amount"`
 	Status   string `json:"status"`
 	DateTime string `json:"dateTime"`
 }
 
+func queryDashboardGrossVolumeStats(db *gorm.DB, now time.Time) (DashboardGrossVolumeStats, error) {
+	type totalResult struct {
+		Total decimal.Decimal `gorm:"column:total"`
+	}
+
+	sumSince := func(since time.Time) (int, error) {
+		result := totalResult{Total: decimal.Zero}
+		err := db.Model(&models.Invoice{}).
+			Select("COALESCE(SUM(invoice_amount_charged), 0) AS total").
+			Where("invoice_date_time >= ?", since).
+			Scan(&result).Error
+		if err != nil {
+			return 0, err
+		}
+
+		return int(result.Total.IntPart()), nil
+	}
+
+	stats := DashboardGrossVolumeStats{}
+	var err error
+
+	stats.GrossVolume30d, err = sumSince(now.AddDate(0, 0, -30))
+	if err != nil {
+		return DashboardGrossVolumeStats{}, err
+	}
+
+	stats.GrossVolume6m, err = sumSince(now.AddDate(0, -6, 0))
+	if err != nil {
+		return DashboardGrossVolumeStats{}, err
+	}
+
+	stats.GrossVolume1y, err = sumSince(now.AddDate(-1, 0, 0))
+	if err != nil {
+		return DashboardGrossVolumeStats{}, err
+	}
+
+	return stats, nil
+}
+
+func queryDashboardRecentActivity(db *gorm.DB, limit int) ([]DashboardInvoiceActivity, error) {
+	if limit <= 0 {
+		limit = 5
+	}
+
+	type activityRow struct {
+		InvoiceID            string          `gorm:"column:invoice_id"`
+		InvoiceAmountCharged decimal.Decimal `gorm:"column:invoice_amount_charged"`
+		InvoiceStatus        string          `gorm:"column:invoice_status"`
+		InvoiceDateTime      time.Time       `gorm:"column:invoice_date_time"`
+	}
+
+	rows := []activityRow{}
+	err := db.Model(&models.Invoice{}).
+		Select("invoice_id, invoice_amount_charged, invoice_status, invoice_date_time").
+		Order("invoice_date_time DESC").
+		Limit(limit).
+		Find(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+
+	activities := make([]DashboardInvoiceActivity, 0, len(rows))
+	for _, row := range rows {
+		activities = append(activities, DashboardInvoiceActivity{
+			ID:       row.InvoiceID,
+			Amount:   int(row.InvoiceAmountCharged.IntPart()),
+			Status:   mapInvoiceStatusForDashboard(row.InvoiceStatus),
+			DateTime: row.InvoiceDateTime.Local().Format("2006-01-02 03:04 PM"),
+		})
+	}
+
+	return activities, nil
+}
+
+func mapInvoiceStatusForDashboard(status string) string {
+	switch status {
+	case "paid":
+		return "Settled"
+	case "created", "verification_pending":
+		return "Pending"
+	case "verification_failed":
+		return "Failed"
+	default:
+		return status
+	}
+}
+
 func (h *Handler) GetDashboardHandler(w http.ResponseWriter, r *http.Request) {
+	stats, err := queryDashboardGrossVolumeStats(h.DB, time.Now())
+	if err != nil {
+		http.Error(w, "failed to fetch dashboard stats", http.StatusInternalServerError)
+		return
+	}
 
-	response := DashboardResponse{}
+	recentActivity, err := queryDashboardRecentActivity(h.DB, 5)
+	if err != nil {
+		http.Error(w, "failed to fetch dashboard activity", http.StatusInternalServerError)
+		return
+	}
 
-	// Mock data — now served from backend
-	response.Stats.GrossVolume30d = 126420
-	response.Stats.GrossVolume6m = 712860
-	response.Stats.GrossVolume1y = 1487300
-
-	response.RecentActivity = []Activity{
-		{ID: "pay_10021", Amount: 4200, Status: "Settled", DateTime: "2026-03-01 09:58 AM"},
-		{ID: "pay_10020", Amount: 870, Status: "Pending", DateTime: "2026-03-01 09:51 AM"},
-		{ID: "pay_10019", Amount: 1940, Status: "Settled", DateTime: "2026-03-01 09:39 AM"},
-		{ID: "pay_10018", Amount: 2560, Status: "Failed", DateTime: "2026-03-01 09:28 AM"},
-		{ID: "pay_10017", Amount: 640, Status: "Settled", DateTime: "2026-03-01 09:07 AM"},
+	response := DashboardResponse{
+		Stats:          stats,
+		RecentActivity: recentActivity,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
