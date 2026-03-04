@@ -12,7 +12,7 @@ export default function Dashboard() {
             try {
                 setDashboardLoading(true);
 
-                const res = await fetch("http://localhost:8080/api/dashboard");
+                const res = await fetch("/api/dashboard");
 
                 if (!res.ok) {
                     throw new Error("Failed to fetch dashboard");
