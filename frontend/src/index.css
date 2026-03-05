@@ -13,6 +13,11 @@
   --color-secondary: #0f8a5f;
   --color-secondary-hover: #0c704e;
   --color-muted: #5b6472;
+  --table-surface: #edf5f1;
+  --table-header: #d6e8df;
+  --table-cell: #f4faf7;
+  --table-border: #b7cec2;
+  --table-text: #0b1220;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -31,6 +36,11 @@
   --color-secondary: #0b6e4f;
   --color-secondary-hover: #095a41;
   --color-muted: #9aa6b2;
+  --table-surface: #162119;
+  --table-header: #1f2f25;
+  --table-cell: #19271e;
+  --table-border: #2d4436;
+  --table-text: #e6f0ea;
 }
 
 a {

@@ -163,7 +163,6 @@ export default function Wallet() {
                     <label htmlFor="walletAddress" style={{ display: "block", marginBottom: "0.5rem" }}>
                         Wallet Address
                     </label>
-
                     <input
                         id="walletAddress"
                         type="text"
