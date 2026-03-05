@@ -13,21 +13,31 @@ import (
 
 const (
 	seedMerchantID        = "seed-merchant-001"
+	seedMerchantID2       = "seed-merchant-002"
 	seedAdminUserID       = "seed-user-admin-001"
 	seedDeveloperUserID   = "seed-user-dev-001"
 	seedOwnerUserID       = "seed-user-owner-001"
 	seedAdminRoleID       = "seed-role-admin-001"
 	seedDeveloperRoleID   = "seed-role-dev-001"
 	seedOwnerRoleID       = "seed-role-owner-001"
+	seedAdminRoleID2      = "seed-role-admin-002"
+	seedDeveloperRoleID2  = "seed-role-dev-002"
+	seedOwnerRoleID2      = "seed-role-owner-002"
 	seedCustomerID        = "seed-customer-001"
 	seedDepositID         = "seed-deposit-001"
 	seedInvoiceID         = "seed-invoice-001"
 	seedMerchantAPIKeyID  = "seed-merchant-api-key-001"
+	seedMerchantAPIKeyID2 = "seed-merchant-api-key-002"
 	seedMerchantAddressID = "seed-merchant-address-001"
+	seedMerchantAddressID2 = "seed-merchant-address-002"
 	seedMerchantProfileID = "seed-merchant-profile-001"
+	seedMerchantProfileID2 = "seed-merchant-profile-002"
 	seedMerchantOwnerID   = "seed-merchant-owner-001"
+	seedMerchantOwnerID2  = "seed-merchant-owner-002"
 	seedMerchantWalletID  = "seed-merchant-wallet-001"
+	seedMerchantWalletID2 = "seed-merchant-wallet-002"
 	seedMerchantWebhookID = "seed-merchant-webhook-001"
+	seedMerchantWebhookID2 = "seed-merchant-webhook-002"
 	seedAdminUsername     = "dev_admin"
 	seedDeveloperUsername = "dev_developer"
 	seedOwnerUsername     = "dev_owner"
@@ -52,7 +62,7 @@ func (s *Server) ResetSeedData() error {
 			return err
 		}
 
-		if err := tx.Where("role_id IN ?", []string{seedAdminRoleID, seedDeveloperRoleID, seedOwnerRoleID}).Delete(&models.Role{}).Error; err != nil {
+		if err := tx.Where("role_id IN ?", []string{seedAdminRoleID, seedDeveloperRoleID, seedOwnerRoleID, seedAdminRoleID2, seedDeveloperRoleID2, seedOwnerRoleID2}).Delete(&models.Role{}).Error; err != nil {
 			return err
 		}
 
@@ -64,7 +74,15 @@ func (s *Server) ResetSeedData() error {
 			return err
 		}
 
+		if err := tx.Where("merchant_webhook_key_id = ?", seedMerchantWebhookID2).Delete(&models.MerchantWebhookKey{}).Error; err != nil {
+			return err
+		}
+
 		if err := tx.Where("merchant_crypto_wallet_id = ?", seedMerchantWalletID).Delete(&models.MerchantCryptoWallet{}).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Where("merchant_crypto_wallet_id = ?", seedMerchantWalletID2).Delete(&models.MerchantCryptoWallet{}).Error; err != nil {
 			return err
 		}
 
@@ -72,7 +90,15 @@ func (s *Server) ResetSeedData() error {
 			return err
 		}
 
+		if err := tx.Where("merchant_owner_id = ?", seedMerchantOwnerID2).Delete(&models.MerchantOwner{}).Error; err != nil {
+			return err
+		}
+
 		if err := tx.Where("merchant_business_profile_id = ?", seedMerchantProfileID).Delete(&models.MerchantBusinessProfile{}).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Where("merchant_business_profile_id = ?", seedMerchantProfileID2).Delete(&models.MerchantBusinessProfile{}).Error; err != nil {
 			return err
 		}
 
@@ -80,11 +106,23 @@ func (s *Server) ResetSeedData() error {
 			return err
 		}
 
+		if err := tx.Where("merchant_address_id = ?", seedMerchantAddressID2).Delete(&models.MerchantAddress{}).Error; err != nil {
+			return err
+		}
+
 		if err := tx.Where("merchant_api_key_id = ?", seedMerchantAPIKeyID).Delete(&models.MerchantAPIKey{}).Error; err != nil {
 			return err
 		}
 
+		if err := tx.Where("merchant_api_key_id = ?", seedMerchantAPIKeyID2).Delete(&models.MerchantAPIKey{}).Error; err != nil {
+			return err
+		}
+
 		if err := tx.Where("merchant_id = ?", seedMerchantID).Delete(&models.Merchant{}).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Where("merchant_id = ?", seedMerchantID2).Delete(&models.Merchant{}).Error; err != nil {
 			return err
 		}
 
@@ -93,23 +131,6 @@ func (s *Server) ResetSeedData() error {
 }
 
 func (s *Server) SeedDevData() error {
-	var existingMerchant models.Merchant
-	err := s.DB.Where("merchant_id = ?", seedMerchantID).First(&existingMerchant).Error
-	if err == nil {
-		if updateErr := s.DB.Model(&models.MerchantCryptoWallet{}).
-			Where("merchant_crypto_wallet_id = ?", seedMerchantWalletID).
-			Update("merchant_crypto_wallet_address", seedWalletAddress).Error; updateErr != nil {
-			return updateErr
-		}
-
-		log.Printf("Seed exists: updated wallet address for merchant %s", seedMerchantID)
-		return nil
-	}
-
-	if err != gorm.ErrRecordNotFound {
-		return err
-	}
-
 	adminPasswordHash, err := bcrypt.GenerateFromPassword([]byte(seedUserPasswordPlain), bcrypt.DefaultCost)
 	if err != nil {
 		return err
@@ -158,9 +179,17 @@ func (s *Server) SeedDevData() error {
 	return s.DB.Transaction(func(tx *gorm.DB) error {
 		merchant := models.Merchant{
 			MerchantID:   seedMerchantID,
-			MerchantName: "Seed Merchant LLC",
+			MerchantName: "Coffee Shop POS",
 		}
 		if err := upsert(tx, &merchant); err != nil {
+			return err
+		}
+
+		merchant2 := models.Merchant{
+			MerchantID:   seedMerchantID2,
+			MerchantName: "Acai Bowl POS",
+		}
+		if err := upsert(tx, &merchant2); err != nil {
 			return err
 		}
 
@@ -170,6 +199,15 @@ func (s *Server) SeedDevData() error {
 			MerchantAPIKeyMerchantID: seedMerchantID,
 		}
 		if err := upsert(tx, &merchantAPIKey); err != nil {
+			return err
+		}
+
+		merchantAPIKey2 := models.MerchantAPIKey{
+			MerchantAPIKeyID:         seedMerchantAPIKeyID2,
+			MerchantAPIKeyHashed:     seedApiKeyHash,
+			MerchantAPIKeyMerchantID: seedMerchantID2,
+		}
+		if err := upsert(tx, &merchantAPIKey2); err != nil {
 			return err
 		}
 
@@ -184,6 +222,20 @@ func (s *Server) SeedDevData() error {
 			MerchantAddressVerified:   true,
 		}
 		if err := upsert(tx, &merchantAddress); err != nil {
+			return err
+		}
+
+		merchantAddress2 := models.MerchantAddress{
+			MerchantAddressID:         seedMerchantAddressID2,
+			MerchantAddressMerchantID: seedMerchantID2,
+			MerchantAddressLine1:      "2 Developer Way",
+			MerchantAddressLine2:      "Suite 200",
+			MerchantAddressCity:       "Ann Arbor",
+			MerchantAddressState:      "MI",
+			MerchantAddressPostalCode: 48104,
+			MerchantAddressVerified:   true,
+		}
+		if err := upsert(tx, &merchantAddress2); err != nil {
 			return err
 		}
 
@@ -204,6 +256,23 @@ func (s *Server) SeedDevData() error {
 			return err
 		}
 
+		merchantProfile2 := models.MerchantBusinessProfile{
+			MerchantBusinessProfileID:                 seedMerchantProfileID2,
+			MerchantBusinessProfileMerchantID:         seedMerchantID2,
+			MerchantBusinessProfileDBAName:            "Seed Merchant Role Demo",
+			MerchantBusinessProfileRegistrationNumber: "REG-002",
+			MerchantBusinessProfileTaxID:              "TAX-002",
+			MerchantBusinessProfileWebsiteURL:         "https://seed-merchant-role-demo.test",
+			MerchantBusinessProfileIncoporationDate:   "2021-02-02",
+			MerchantBusinessProfileLegalStructure:     "LLC",
+			MerchantBusinessProfileMCCCode:            "5734",
+			MerchantBusinessProfilePhoneNumber:        "+1-734-555-0200",
+			MerchantBusinessProfileEmail:              "ops+demo@seed-merchant.test",
+		}
+		if err := upsert(tx, &merchantProfile2); err != nil {
+			return err
+		}
+
 		merchantOwner := models.MerchantOwner{
 			MerchantOwnerID:          seedMerchantOwnerID,
 			MerchantOwnerMerchantID:  seedMerchantID,
@@ -218,6 +287,20 @@ func (s *Server) SeedDevData() error {
 			return err
 		}
 
+		merchantOwner2 := models.MerchantOwner{
+			MerchantOwnerID:          seedMerchantOwnerID2,
+			MerchantOwnerMerchantID:  seedMerchantID2,
+			MerchantOwnerFirstName:   "Dev",
+			MerchantOwnerLastName:    "Engineer",
+			MerchantOwnerPhoneNumber: "+1-734-555-0210",
+			MerchantOwnerEmail:       "developer-owner@seed-merchant.test",
+			MerchantOwnerDOB:         ownerDOB,
+			MerchantOwnerStake:       ownerStake,
+		}
+		if err := upsert(tx, &merchantOwner2); err != nil {
+			return err
+		}
+
 		merchantWallet := models.MerchantCryptoWallet{
 			MerchantCryptoWalletID:         seedMerchantWalletID,
 			MerchantCryptoWalletMerchantID: seedMerchantID,
@@ -228,12 +311,31 @@ func (s *Server) SeedDevData() error {
 			return err
 		}
 
+		merchantWallet2 := models.MerchantCryptoWallet{
+			MerchantCryptoWalletID:         seedMerchantWalletID2,
+			MerchantCryptoWalletMerchantID: seedMerchantID2,
+			MerchantCryptoWalletAddress:    seedWalletAddress,
+			MerchantCryptoWalletVerified:   true,
+		}
+		if err := upsert(tx, &merchantWallet2); err != nil {
+			return err
+		}
+
 		merchantWebhook := models.MerchantWebhookKey{
 			MerchantWebhookKeyID:         seedMerchantWebhookID,
 			MerchantWebhookKey:           seedWebhookKey,
 			MerchantWebhookKeyMerchantID: seedMerchantID,
 		}
 		if err := upsert(tx, &merchantWebhook); err != nil {
+			return err
+		}
+
+		merchantWebhook2 := models.MerchantWebhookKey{
+			MerchantWebhookKeyID:         seedMerchantWebhookID2,
+			MerchantWebhookKey:           seedWebhookKey,
+			MerchantWebhookKeyMerchantID: seedMerchantID2,
+		}
+		if err := upsert(tx, &merchantWebhook2); err != nil {
 			return err
 		}
 
@@ -303,6 +405,36 @@ func (s *Server) SeedDevData() error {
 			return err
 		}
 
+		adminRole2 := models.Role{
+			RoleID:         seedAdminRoleID2,
+			RoleMerchantID: seedMerchantID2,
+			RoleUserID:     seedAdminUserID,
+			RoleName:       models.RoleAdmin,
+		}
+		if err := upsert(tx, &adminRole2); err != nil {
+			return err
+		}
+
+		developerRole2 := models.Role{
+			RoleID:         seedDeveloperRoleID2,
+			RoleMerchantID: seedMerchantID2,
+			RoleUserID:     seedOwnerUserID,
+			RoleName:       models.RoleDeveloper,
+		}
+		if err := upsert(tx, &developerRole2); err != nil {
+			return err
+		}
+
+		ownerRole2 := models.Role{
+			RoleID:         seedOwnerRoleID2,
+			RoleMerchantID: seedMerchantID2,
+			RoleUserID:     seedDeveloperUserID,
+			RoleName:       models.RoleOwner,
+		}
+		if err := upsert(tx, &ownerRole2); err != nil {
+			return err
+		}
+
 		customer := models.Customer{
 			CustomerID:         seedCustomerID,
 			CustomerMerchantID: seedMerchantID,
@@ -339,6 +471,8 @@ func (s *Server) SeedDevData() error {
 		if err := upsert(tx, &invoice); err != nil {
 			return err
 		}
+
+		log.Printf("Seeded merchants %s and %s with shared users and merchant-specific roles", seedMerchantID, seedMerchantID2)
 
 		return nil
 	})

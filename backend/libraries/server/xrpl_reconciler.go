@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -140,6 +141,11 @@ func (r *XRPLReconciler) reconcileWallet(merchantID string, address string) erro
 	for {
 		result, rpcErr := r.fetchAccountTx(address, checkpoint.LastLedgerIndex+1, marker)
 		if rpcErr != nil {
+			// XRPL returns lgrIdxsInvalid when ledger_index_min is ahead of the current validated ledger.
+			// This is expected when there are no new ledgers/transactions yet, especially on fresh dev DBs.
+			if strings.Contains(rpcErr.Error(), "lgrIdxsInvalid") {
+				break
+			}
 			return rpcErr
 		}
 
