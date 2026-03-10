@@ -563,3 +563,56 @@ func (h *Handler) RemoveMerchantUserHandler(w http.ResponseWriter, r *http.Reque
 		"message": "User removed",
 	})
 }
+
+func (h *Handler) GetMerchantWalletHandler(w http.ResponseWriter, r *http.Request) {
+	sessionToken, err := sessionManager.GetSessionToken(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	sessionData, _, active := sessionManager.CheckSession(sessionToken)
+	if !active {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	// get query parameter
+	merchantID := r.URL.Query().Get("merchant_id")
+	if merchantID == "" {
+		http.Error(w, "merchant_id query parameter needed", http.StatusBadRequest)
+		return
+	}
+	// check if user is actually a part of the merchants users
+	// also check if user has role with priviledge to access wallet
+	var users_role models.Role
+	if err := h.DB.Where("role_merchant_id = ? AND role_user_id = ? and role_name IN ?", merchantID, sessionData.UserID, []string{models.RoleAdmin, models.RoleOwner}).First(&users_role).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "Failed", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "DB error", http.StatusInternalServerError)
+		return
+	}
+	// get the wallet
+	var wallet models.MerchantCryptoWallet
+	if err := h.DB.Where("merchant_crypto_wallet_merchant_id = ?", merchantID).First(&wallet).Error; err != nil {
+		http.Error(w, "Error retrieving wallet", http.StatusInternalServerError)
+		return
+	}
+	// make struct for response
+	type WalletResponse struct {
+		WalletAddress string `json:"wallet_address"`
+	}
+
+	resp := WalletResponse{
+		WalletAddress: wallet.MerchantCryptoWalletAddress,
+	}
+	// send response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(resp)
+}
+
+func (h *Handler) SetMerchantWalletHandler(w http.ResponseWriter, r *http.Request) {
+	// TODO
+}
