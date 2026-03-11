@@ -34,7 +34,6 @@ export default function Wallet() {
                 }
 
                 const data = await response.json();
-                console.log(data.wallet_address)
                 setWalletAddress(data.wallet_address || "");
                 setDraftWalletAddress(data.wallet_address || "");
                 setEditing(!data.wallet_address);
@@ -67,18 +66,18 @@ export default function Wallet() {
                 selectedMerchant?.merchant_id;
 
             const params = new URLSearchParams({
-                merchantid: merchantId
+                merchant_id: merchantId
             });
 
             const response = await fetch(
-                `/api/merchant-wallet?${params}`,
+                `/api/merchant/set-wallet?${params}`,
                 {
-                    method: "POST",
+                    method: "PATCH",
                     headers: {
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        walletAddress: nextWallet
+                        wallet_address: nextWallet
                     })
                 }
             );
