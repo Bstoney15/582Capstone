@@ -563,3 +563,121 @@ func (h *Handler) RemoveMerchantUserHandler(w http.ResponseWriter, r *http.Reque
 		"message": "User removed",
 	})
 }
+
+func (h *Handler) GetMerchantWalletHandler(w http.ResponseWriter, r *http.Request) {
+	// check authentication
+	sessionToken, err := sessionManager.GetSessionToken(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	sessionData, _, active := sessionManager.CheckSession(sessionToken)
+	if !active {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	// get query parameter
+	merchantID := r.URL.Query().Get("merchant_id")
+	if merchantID == "" {
+		http.Error(w, "merchant_id query parameter needed", http.StatusBadRequest)
+		return
+	}
+	// check if user is actually a part of the merchants users
+	// also check if user has role with priviledge to access wallet
+	var users_role models.Role
+	if err := h.DB.Where("role_merchant_id = ? AND role_user_id = ? and role_name IN ?", merchantID, sessionData.UserID, []string{models.RoleAdmin, models.RoleOwner}).First(&users_role).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "Failed", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "DB error", http.StatusInternalServerError)
+		return
+	}
+	// get the wallet
+	var wallet models.MerchantCryptoWallet
+	if err := h.DB.Where("merchant_crypto_wallet_merchant_id = ?", merchantID).First(&wallet).Error; err != nil {
+		http.Error(w, "Error retrieving wallet", http.StatusInternalServerError)
+		return
+	}
+	// make struct for response
+	type WalletResponse struct {
+		WalletAddress string `json:"wallet_address"`
+	}
+
+	resp := WalletResponse{
+		WalletAddress: wallet.MerchantCryptoWalletAddress,
+	}
+	// send response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(resp)
+}
+
+func (h *Handler) SetMerchantWalletHandler(w http.ResponseWriter, r *http.Request) {
+	// check authentication
+	sessionToken, err := sessionManager.GetSessionToken(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	sessionData, _, active := sessionManager.CheckSession(sessionToken)
+	if !active {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// get query parameter
+	merchantID := r.URL.Query().Get("merchant_id")
+	if merchantID == "" {
+		http.Error(w, "merchant_id query parameter needed", http.StatusBadRequest)
+		return
+	}
+	// check if user is actually a part of the merchants users
+	// also check if user has role with priviledge to access wallet
+	var users_role models.Role
+	if err := h.DB.Where("role_merchant_id = ? AND role_user_id = ? and role_name IN ?", merchantID, sessionData.UserID, []string{models.RoleAdmin, models.RoleOwner}).First(&users_role).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "Failed", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "DB error", http.StatusInternalServerError)
+		return
+	}
+	// get request body (wallet address)
+	type SetWalletRequest struct {
+		WalletAddress string `json:"wallet_address"`
+	}
+
+	var requestBody SetWalletRequest
+	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+		http.Error(w, "Error parsing request", http.StatusBadRequest)
+		return
+	}
+
+	// make sure request has all required params
+	if requestBody.WalletAddress == "" {
+		http.Error(w, "wallet_address required", http.StatusBadRequest)
+		return
+	}
+
+	// set wallet address
+	//! this assumes the entry for the merchants wallet exists, not sure if that will be the real way its implemented
+	// for ex, if new merchant account by default has no crytpo wallet entry
+	var MerchantCryptoWallet models.MerchantCryptoWallet
+	if err := h.DB.Where("merchant_crypto_wallet_merchant_id = ?", merchantID).First(&MerchantCryptoWallet).Error; err != nil {
+		http.Error(w, "failed to find merchant crypto wallet entry", http.StatusNotFound)
+		return
+	}
+	// edit the users role
+	MerchantCryptoWallet.MerchantCryptoWalletAddress = requestBody.WalletAddress
+	h.DB.Save(&MerchantCryptoWallet)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "Wallet address set",
+	})
+
+}
