@@ -21,6 +21,40 @@ const bodyCellStyle = {
     backgroundColor: "var(--table-cell)"
 };
 
+const modalOverlayStyle = {
+    position: "fixed",
+    inset: 0,
+    backgroundColor: "color-mix(in srgb, var(--color-base) 60%, transparent)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1000,
+    padding: "1rem"
+};
+
+const modalCardStyle = {
+    width: "min(640px, 100%)",
+    backgroundColor: "var(--color-base-variant)",
+    color: "var(--color-text)",
+    border: "1px solid var(--table-border)",
+    borderRadius: "10px",
+    padding: "1rem",
+    boxShadow: "0 14px 36px color-mix(in srgb, var(--color-base) 70%, transparent)"
+};
+
+const tokenStyle = {
+    margin: 0,
+    wordBreak: "break-all",
+    fontFamily: "monospace",
+    backgroundColor: "var(--table-cell)",
+    color: "var(--table-text)",
+    border: "1px solid var(--table-border)",
+    borderRadius: "8px",
+    padding: "0.75rem"
+};
+
+const mockJwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtZXJjaGFudF9pZCI6ImRlbW8tMTIzIiwic2NvcGUiOiJpbnZvaWNlOndyaXRlIiwiaWF0IjoxNzEwMDAwMDAwLCJleHAiOjE4NjAwMDAwMDB9.kfV9L42wP8o2nQ6uT1c8sB1yKj0h7mR3pD4aN5xY6zQ";
+
 function generateMockKeyValue() {
     const alphabet = "abcdefghijklmnopqrstuvwxyz0123456789";
     let token = "sk_live_";
@@ -35,6 +69,8 @@ export default function ApiKeys() {
     const [keys, setKeys] = useState([]);
     const [newKeyName, setNewKeyName] = useState("");
     const [statusMessage, setStatusMessage] = useState("");
+    const [showTokenModal, setShowTokenModal] = useState(false);
+    const [copyMessage, setCopyMessage] = useState("");
 
     const storageKey = useMemo(() => {
         const merchantId = selectedMerchant?.id ?? selectedMerchant?.merchant_id ?? selectedMerchant?.name ?? "default";
@@ -44,14 +80,9 @@ export default function ApiKeys() {
     useEffect(() => {
         const raw = localStorage.getItem(storageKey);
         if (!raw) {
-            const seededKeys = [{
-                id: crypto.randomUUID(),
-                key: generateMockKeyValue(),
-                name: "Production Checkout",
-                generatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString()
-            }];
-            localStorage.setItem(storageKey, JSON.stringify(seededKeys));
-            setKeys(seededKeys);
+            setKeys([]);
+            setStatusMessage("");
+            setNewKeyName("");
             return;
         }
 
@@ -89,12 +120,22 @@ export default function ApiKeys() {
         // Only one key is shown/managed in this mock UI.
         persistKeys([newKey]);
         setNewKeyName("");
-        setStatusMessage("API key generated (mock POST /api/merchant/api_key). Secret shown once: " + newKey.key);
+        setStatusMessage("");
+        setCopyMessage("");
+        setShowTokenModal(true);
     };
 
     const onDeleteKey = (id) => {
         persistKeys(keys.filter((key) => key.id !== id));
-        setStatusMessage("API key deleted (mock DELETE /api/merchant/api_key/<api_key>). ");
+        setStatusMessage("");
+    };
+
+    const onCopyToken = async () => {
+        try {
+            await navigator.clipboard.writeText(mockJwt);
+        } catch {
+            setCopyMessage("Copy failed. Please copy manually.");
+        }
     };
 
     if (isLoading) {
@@ -105,13 +146,33 @@ export default function ApiKeys() {
         <div style={{ padding: "2rem", maxWidth: "840px" }}>
             <h1>API Keys</h1>
 
-            {selectedMerchant ? (
-                <p style={{ marginBottom: "1rem" }}>
-                    Create and delete API keys for invoice creation. Existing keys only show name and generation time.
-                </p>
-            ) : (
-                <p style={{ marginBottom: "1rem" }}>Select a merchant account to manage API keys.</p>
+            {showTokenModal && (
+                <div style={modalOverlayStyle} role="dialog" aria-modal="true" aria-labelledby="api-key-modal-title">
+                    <div style={modalCardStyle}>
+                        <h2 id="api-key-modal-title" style={{ marginTop: 0, marginBottom: "0.75rem" }}>
+                            Copy This Key:
+                        </h2>
+                        <p style={tokenStyle}>{mockJwt}</p>
+                        {copyMessage && <p style={{ marginTop: "0.75rem", marginBottom: 0 }}>{copyMessage}</p>}
+                        <div style={{ marginTop: "1rem", display: "flex", justifyContent: "flex-end", gap: "0.5rem" }}>
+                            <button type="button" onClick={onCopyToken}>
+                                Copy
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setShowTokenModal(false);
+                                    setCopyMessage("");
+                                }}
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
+
+            {!selectedMerchant && <p style={{ marginBottom: "1rem" }}>Select a merchant account to manage API keys.</p>}
 
             {statusMessage && (
                 <p style={{ color: statusMessage.includes("required") ? "#b91c1c" : "#166534", marginBottom: "1rem", wordBreak: "break-word" }}>

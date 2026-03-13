@@ -30,20 +30,29 @@ export default function Webhooks() {
 
     const storageKey = useMemo(() => {
         const merchantId = selectedMerchant?.id ?? selectedMerchant?.merchant_id ?? selectedMerchant?.name ?? "default";
+        return `mock:merchant:webhooks:${merchantId}`;
+    }, [selectedMerchant]);
+
+    const legacyStorageKey = useMemo(() => {
+        const merchantId = selectedMerchant?.id ?? selectedMerchant?.merchant_id ?? selectedMerchant?.name ?? "default";
         return `mock:merchant:webhook:${merchantId}`;
     }, [selectedMerchant]);
 
     useEffect(() => {
-        const raw = localStorage.getItem(storageKey);
+        let raw = localStorage.getItem(storageKey);
+
+        // Keep existing mock data created before the storage key rename.
         if (!raw) {
-            const seededWebhooks = [{
-                id: crypto.randomUUID(),
-                url: "https://merchant.example.com/webhooks/invoices",
-                hasSecret: true,
-                updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString()
-            }];
-            localStorage.setItem(storageKey, JSON.stringify(seededWebhooks));
-            setWebhooks(seededWebhooks);
+            const legacyRaw = localStorage.getItem(legacyStorageKey);
+            if (legacyRaw) {
+                raw = legacyRaw;
+                localStorage.setItem(storageKey, legacyRaw);
+                localStorage.removeItem(legacyStorageKey);
+            }
+        }
+
+        if (!raw) {
+            setWebhooks([]);
             setWebhookUrl("");
             setWebhookSecret("");
             setStatusMessage("");
@@ -61,7 +70,7 @@ export default function Webhooks() {
             setWebhookSecret("");
         }
         setStatusMessage("");
-    }, [storageKey]);
+    }, [legacyStorageKey, storageKey]);
 
     const persistWebhooks = (nextWebhooks) => {
         setWebhooks(nextWebhooks);
@@ -89,13 +98,13 @@ export default function Webhooks() {
         persistWebhooks([nextConfig]);
         setWebhookUrl("");
         setWebhookSecret("");
-        setStatusMessage("Webhook saved (mock POST /api/merchant/webhook).");
+        setStatusMessage("");
     };
 
     const onDeleteWebhook = (id) => {
         const nextWebhooks = webhooks.filter((webhook) => webhook.id !== id);
         persistWebhooks(nextWebhooks);
-        setStatusMessage("Webhook config deleted (mock DELETE /api/merchant/webhook).");
+        setStatusMessage("");
     };
 
     if (isLoading) {
@@ -156,7 +165,7 @@ export default function Webhooks() {
                         <thead>
                             <tr>
                                 <th style={headerCellStyle}>Webhook URL</th>
-                                <th style={headerCellStyle}>Secret</th>
+                                <th style={headerCellStyle}>Key</th>
                                 <th style={headerCellStyle}>Updated</th>
                                 <th style={headerCellStyle}>Action</th>
                             </tr>
@@ -165,7 +174,7 @@ export default function Webhooks() {
                             {webhooks.map((webhook) => (
                                 <tr key={webhook.id} style={{ borderTop: "1px solid var(--table-border)" }}>
                                     <td style={bodyCellStyle}>{webhook.url}</td>
-                                    <td style={bodyCellStyle}>Configured</td>
+                                    <td style={bodyCellStyle}>Hidden</td>
                                     <td style={bodyCellStyle}>{new Date(webhook.updatedAt).toLocaleString()}</td>
                                     <td style={bodyCellStyle}>
                                         <button type="button" onClick={() => onDeleteWebhook(webhook.id)}>

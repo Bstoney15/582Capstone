@@ -48,7 +48,7 @@ export default function WidgetDemo() {
 
     if (hasLatestMethods) {
       setScriptReady(true);
-      setStatusMessage("Widget script loaded. Click Checkout with XRPL.");
+      setStatusMessage("Widget script loaded. Click Checkout with XRPay.");
       return;
     }
 
@@ -78,7 +78,7 @@ export default function WidgetDemo() {
       }
 
         setScriptReady(true);
-      setStatusMessage("Widget script loaded. Click Checkout with XRPL.");
+      setStatusMessage("Widget script loaded. Click Checkout with XRPay.");
     };
 
     script.onload = handleLoad;
@@ -110,7 +110,7 @@ export default function WidgetDemo() {
       });
 
       setInitialized(true);
-      setStatusMessage("Checkout ready. Click Checkout with XRPL to create invoice + start payment.");
+      setStatusMessage("Checkout ready. Click Checkout with XRPay to create invoice + start payment.");
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : "Failed to initialize checkout widget.");
     }
@@ -196,7 +196,7 @@ export default function WidgetDemo() {
 
   return (
     <div style={{ maxWidth: "920px", margin: "2rem auto", padding: "1rem", display: "grid", gap: "1rem" }}>
-      <h1 style={{ margin: 0 }}>Demo Storefront</h1>
+      <h1 style={{ margin: 0 }}>Coffee Shop Demo Storefront</h1>
       <p style={{ margin: 0, opacity: 0.85 }}>Pick a few items and checkout with the XRPay widget.</p>
 
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "1rem", alignItems: "start" }}>
@@ -263,7 +263,7 @@ export default function WidgetDemo() {
               opacity: initialized && subtotal > 0 && !isCreatingInvoice ? 1 : 0.7,
             }}
           >
-            {isCreatingInvoice ? "Creating Invoice..." : "Checkout with XRPL"}
+            {isCreatingInvoice ? "Creating Invoice..." : "Checkout with XRPay"}
           </button>
 
           <p style={{ margin: 0, fontSize: "0.88rem", opacity: 0.75 }}>Demo invoice: {invoiceId}</p>
@@ -271,7 +271,6 @@ export default function WidgetDemo() {
       </div>
 
       <p style={{ margin: 0, fontSize: "0.95rem" }}><strong>Status:</strong> {statusMessage}</p>
-      <p style={{ margin: 0, fontSize: "0.88rem", opacity: 0.75 }}>Widget script: {widgetScriptSrc}</p>
       <button id="widget-demo-hidden-trigger" type="button" style={{ display: "none" }} aria-hidden="true" tabIndex={-1}>
         Hidden widget trigger
       </button>
