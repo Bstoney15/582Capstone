@@ -1,9 +1,14 @@
 package models
 
-import "github.com/shopspring/decimal"
+import (
+	"time"
+
+	"github.com/shopspring/decimal"
+)
 
 type Invoice struct {
 	InvoiceID            string          `gorm:"primaryKey;type:varchar(36)" json:"invoice_id"`
+	InvoiceDateTime      time.Time       `gorm:"not null;autoCreateTime" json:"invoice_date_time"`
 	InvoiceAmountCharged decimal.Decimal `gorm:"not null;type:decimal(16,4)" json:"invoice_amount_charged"`
 	InvoiceStatus        string          `gorm:"not null" json:"invoice_status"`
 	InvoiceFeeAmount     decimal.Decimal `gorm:"not null;type:decimal(16,4)" json:"invoice_fee_amount"`

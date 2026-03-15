@@ -5,6 +5,7 @@ import (
 	"backend/models"
 	"log"
 	"net/http"
+	"strings"
 
 	"os"
 
@@ -56,7 +57,36 @@ func (s *Server) Start(address string) error {
 		}
 	}
 
-	return http.ListenAndServe(address, s.Router)
+	xrplReconciler := NewXRPLReconciler(s.DB)
+	xrplReconciler.Start()
+
+	return http.ListenAndServe(address, s.withWidgetCORS(s.Router))
+}
+
+func (s *Server) withWidgetCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		isWidgetAPI := r.URL.Path == "/api/invoices" ||
+			strings.HasPrefix(r.URL.Path, "/api/invoices/") ||
+			r.URL.Path == "/api/verify"
+
+		if isWidgetAPI {
+			origin := r.Header.Get("Origin")
+			if origin != "" {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+				w.Header().Set("Vary", "Origin")
+				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+				w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Accept, X-API-Key")
+				w.Header().Set("Access-Control-Max-Age", "600")
+			}
+
+			if r.Method == http.MethodOptions {
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (s *Server) AutoMigrateDB() error {
@@ -74,5 +104,7 @@ func (s *Server) AutoMigrateDB() error {
 		&models.Customer{},
 		&models.Deposit{},
 		&models.Invoice{},
+		&models.XRPLCheckpoint{},
+		&models.XRPLPayment{},
 	)
 }

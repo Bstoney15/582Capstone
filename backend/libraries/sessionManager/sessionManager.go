@@ -15,7 +15,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-const sessionLength = 300 // session length in seconds (5 minutes)
+const sessionLength = 600 // session length in seconds (10 minutes)
 const SessionCookieName = "session_id"
 
 // secret key used to sign the tokens. In a production app, this should be an environment variable.

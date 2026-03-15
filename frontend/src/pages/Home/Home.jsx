@@ -46,6 +46,9 @@ export default function Home() {
           <Link className="home-button home-button-secondary" to="/login">
             Log In
           </Link>
+          <Link className="home-button home-button-secondary" to="/widget-demo">
+            Widget Demo
+          </Link>
         </div>
       </div>
     </div>
