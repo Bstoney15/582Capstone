@@ -1,30 +1,53 @@
+// Author: Benjamin Stonestreet
+// Created: 2026-03-03
+// This is a demo page showcasing the XRPay checkout widget integration. It simulates a simple storefront where users can select quantities of coffee-related items and proceed to checkout using the XRPay widget. The page handles loading the widget script, creating an invoice on the backend, and starting the widget checkout flow. Status messages are displayed to guide the user through the process.
+
+
 import { useEffect, useMemo, useState } from "react";
 
+// DOM id used to find/remove a previously injected widget <script> tag
 const widgetScriptId = "xrpay-widget-script";
+// URL of the checkout widget script served by the backend; cache-busted with a date version query param
 const widgetScriptSrc = "http://localhost:8080/widget/checkout.js?v=20260301-2";
+// Base URL for all backend API calls (invoice creation, etc.)
 const backendApiBaseUrl = "http://localhost:8080";
+// Demo API key used when creating invoices from this storefront demo
 const devInvoiceApiKey = "dev_demo_invoice_key";
 
+// Static catalogue of items available in the demo storefront
 const storeItems = [
   { id: "coffee-beans", name: "Single Origin Beans", description: "250g medium roast", price: 24.0 },
   { id: "dripper", name: "Ceramic Dripper", description: "V60-compatible pour over", price: 18.0 },
   { id: "filters", name: "Paper Filters", description: "100 count pack", price: 8.0 },
 ];
 
+/**
+ * WidgetDemo acts as the main storefront component for the checkout demo,
+ * handling cart state, total calculations, and triggering the checkout widget.
+ * @returns {JSX.Element} The rendered WidgetDemo component.
+ */
 export default function WidgetDemo() {
+  // Invoice ID returned by the backend after creating an invoice for the current cart
   const [invoiceId, setInvoiceId] = useState("(created at checkout)");
+  // True once the widget <script> has loaded and exposed the expected MyPay API
   const [scriptReady, setScriptReady] = useState(false);
+  // True once window.MyPay.init() has been called successfully
   const [initialized, setInitialized] = useState(false);
+  // True while the invoice creation request is in-flight
   const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
+  // Human-readable status string shown at the bottom of the page
   const [statusMessage, setStatusMessage] = useState("Loading checkout widget script...");
+  // Per-item quantity selections keyed by item id
   const [quantities, setQuantities] = useState({
     "coffee-beans": 1,
     dripper: 1,
     filters: 1,
   });
 
+  // URL the widget will redirect to after a successful payment; stable across renders
   const successUrl = useMemo(() => `${window.location.origin}/widget-demo?payment=queued`, []);
 
+  // Derive line-item objects (with quantity and computed line total) from the static catalogue
   const lineItems = useMemo(
     () =>
       storeItems.map((item) => {
@@ -38,9 +61,13 @@ export default function WidgetDemo() {
     [quantities]
   );
 
+  // Sum of all line totals; recomputed whenever quantities change
   const subtotal = useMemo(() => lineItems.reduce((sum, item) => sum + item.lineTotal, 0), [lineItems]);
 
+  // Effect: load the checkout widget <script> from the backend on mount.
+  // If MyPay is already present with the required API surface (e.g. hot-reload), skip re-injection.
   useEffect(() => {
+    // Check whether the current window.MyPay already exposes the expected v2 API methods
     const hasLatestMethods =
       !!window.MyPay &&
       typeof window.MyPay.setInvoiceId === "function" &&
@@ -52,10 +79,12 @@ export default function WidgetDemo() {
       return;
     }
 
+    // Remove a stale MyPay global so the freshly injected script can redefine it cleanly
     if (window.MyPay) {
       delete window.MyPay;
     }
 
+    // Remove any previously injected widget script tag before re-injecting
     const existingScript = document.getElementById(widgetScriptId);
     if (existingScript) {
       existingScript.remove();
@@ -67,6 +96,7 @@ export default function WidgetDemo() {
     script.async = true;
 
     const handleLoad = () => {
+      // After the script loads, verify it exposed the v2 API surface before marking it ready
       const loadedHasLatestMethods =
         !!window.MyPay &&
         typeof window.MyPay.setInvoiceId === "function" &&
@@ -83,24 +113,29 @@ export default function WidgetDemo() {
 
     script.onload = handleLoad;
 
+    // Provide a user-friendly error if the backend is not running or the path is wrong
     script.onerror = () => {
       setStatusMessage("Failed to load widget script from backend. Start backend on :8080 and retry.");
     };
 
     document.body.appendChild(script);
 
+    // Cleanup: detach handlers to avoid stale-closure memory leaks (script stays in DOM intentionally)
     return () => {
       script.onload = null;
       script.onerror = null;
     };
   }, []);
 
+  // Effect: initialise the widget once the script is ready and MyPay is available.
+  // Runs only once per page lifecycle (guarded by the `initialized` flag).
   useEffect(() => {
     if (!scriptReady || initialized || !window.MyPay) {
       return;
     }
 
     try {
+      // Pass a placeholder invoice id during init; the real id is set via setInvoiceId at checkout time
       window.MyPay.init({
         invoiceId: "seed-invoice-001",
         triggerSelector: "#widget-demo-hidden-trigger",
@@ -116,8 +151,15 @@ export default function WidgetDemo() {
     }
   }, [scriptReady, initialized, successUrl]);
 
+  /**
+   * Creates a new invoice on the backend for the given cart total and returns the response body.
+   * Throws an Error with a descriptive message on any failure so the caller can surface it.
+   * @param {number} amountXRP The amount in XRP for the invoice.
+   * @returns {Promise<Object>} The created invoice data.
+   */
   const createInvoiceForCheckout = async (amountXRP) => {
     const amountUSD = amountXRP.toFixed(2);
+    // Four-decimal precision required for XRP amounts by the backend API
     const compatibilityAmountXRP = amountXRP.toFixed(4);
 
     const response = await fetch(`${backendApiBaseUrl}/api/invoices`, {
@@ -147,6 +189,13 @@ export default function WidgetDemo() {
     return responseBody;
   };
 
+  /**
+   * Click handler for the "Checkout with XRPay" button.
+   * Guards against uninitialized state and empty carts, then:
+   *   1. Creates an invoice on the backend for the current cart subtotal.
+   *   2. Passes the new invoice id to the widget via setInvoiceId.
+   *   3. Starts the widget payment flow via MyPay.start().
+   */
   const handleCheckout = async () => {
     if (!initialized || !window.MyPay) {
       setStatusMessage("Checkout is not initialized yet.");
@@ -166,16 +215,19 @@ export default function WidgetDemo() {
       const createdInvoiceId = createdInvoice.invoice_id;
       setInvoiceId(createdInvoiceId);
 
+      // Update status with conversion details when the backend returns XRP amount
       if (createdInvoice?.amount_xrp) {
         setStatusMessage(
           `Invoice ${createdInvoiceId.slice(0, 8)}... created: $${subtotal.toFixed(2)} -> ${createdInvoice.amount_xrp} XRP (${createdInvoice.pricing_source || "pricing"}).`
         );
       }
 
+      // Safety check: ensure the runtime widget still exposes the v2 API before calling it
       if (typeof window.MyPay.setInvoiceId !== "function" || typeof window.MyPay.start !== "function") {
         throw new Error("Widget API is outdated (missing setInvoiceId/start). Hard refresh the page and retry.");
       }
 
+      // Wire the freshly created invoice into the widget, then open the payment modal
       window.MyPay.setInvoiceId(createdInvoiceId);
       await window.MyPay.start();
     } catch (error) {
@@ -185,8 +237,14 @@ export default function WidgetDemo() {
     }
   };
 
+  /**
+   * Updates the quantity for a single item, clamping the value to the range [0, 5].
+   * @param {string} itemId The unique ID of the item.
+   * @param {string|number} nextValue The new quantity value.
+   */
   const updateQuantity = (itemId, nextValue) => {
     const parsed = Number(nextValue);
+    // Clamp to valid range and floor to integer; default to 0 for non-finite inputs
     const safe = Number.isFinite(parsed) ? Math.max(0, Math.min(5, Math.floor(parsed))) : 0;
     setQuantities((previous) => ({
       ...previous,
@@ -248,7 +306,8 @@ export default function WidgetDemo() {
             <span>${subtotal.toFixed(2)}</span>
           </div>
 
-          <button
+          {/* Checkout button: disabled until widget is initialised, cart is non-empty, and no request is in-flight */}
+      <button
             id="widget-demo-pay-button"
             type="button"
             onClick={handleCheckout}
@@ -271,6 +330,7 @@ export default function WidgetDemo() {
       </div>
 
       <p style={{ margin: 0, fontSize: "0.95rem" }}><strong>Status:</strong> {statusMessage}</p>
+      {/* Hidden button used as the widget's triggerSelector target; never shown to the user */}
       <button id="widget-demo-hidden-trigger" type="button" style={{ display: "none" }} aria-hidden="true" tabIndex={-1}>
         Hidden widget trigger
       </button>

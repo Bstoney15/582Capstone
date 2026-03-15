@@ -1,5 +1,8 @@
 package routes
 
+// Author: Benjamin Stonestreet
+// Created: 2024-03-08
+
 import (
 	"backend/models"
 	"encoding/json"
@@ -22,12 +25,14 @@ const (
 	xrpUSDQuoteURL           = "https://api.coinbase.com/v2/prices/XRP-USD/spot"
 )
 
+// CreateInvoiceRequest is the payload expected for creating a new invoice.
 type CreateInvoiceRequest struct {
 	MerchantAPIKey string `json:"merchant_api_key"`
 	AmountXRP      any    `json:"amount_xrp,omitempty"`
 	AmountUSD      any    `json:"amount_usd,omitempty"`
 }
 
+// CreateInvoiceResponse is the response returned after a successful invoice creation.
 type CreateInvoiceResponse struct {
 	InvoiceID     string `json:"invoice_id"`
 	AmountXRP     string `json:"amount_xrp"`
@@ -36,6 +41,7 @@ type CreateInvoiceResponse struct {
 	PricingSource string `json:"pricing_source,omitempty"`
 }
 
+// coinbaseSpotResponse maps the response format from Coinbase's spot price API.
 type coinbaseSpotResponse struct {
 	Data struct {
 		Amount string `json:"amount"`
@@ -75,6 +81,7 @@ func parseDecimalInput(value any) (decimal.Decimal, bool, error) {
 	}
 }
 
+// resolveUSDPerXRP fetches the current XRP spot price in USD from Coinbase.
 func resolveUSDPerXRP() (decimal.Decimal, string, error) {
 	client := &http.Client{Timeout: 5 * time.Second}
 	request, err := http.NewRequest(http.MethodGet, xrpUSDQuoteURL, nil)
@@ -108,6 +115,7 @@ func resolveUSDPerXRP() (decimal.Decimal, string, error) {
 	return rate, "fallback_env", nil
 }
 
+// CreateInvoiceHandler handles the HTTP route for generating a retail invoice.
 func (h *Handler) CreateInvoiceHandler(w http.ResponseWriter, r *http.Request) {
 	applyWidgetCORSHeaders(w, r)
 

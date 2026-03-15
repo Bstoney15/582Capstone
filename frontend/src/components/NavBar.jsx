@@ -1,3 +1,7 @@
+// Author: Benjamin Stonestreet
+// Created: 2026-02-21
+// Description: This component is the navigation bar for the application.
+
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -7,6 +11,10 @@ import Dropdown from "./Dropdown";
 import { UserCircleIcon, SunIcon, MoonIcon } from "@heroicons/react/24/outline";
 import "./NavBar.css";
 
+/**
+ * Navigation Bar component displaying links, merchant selector, and user profile menu.
+ * @returns {JSX.Element} The rendered NavBar.
+ */
 export default function NavBar() {
     const { checkAuthStatus } = useAuth();
     const { merchants, selectedMerchant, setSelectedMerchant, requireRole } = useMerchant();
@@ -16,18 +24,26 @@ export default function NavBar() {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const profileRef = useRef(null);
 
+    // Effect to close the profile menu when clicking outside of it
     useEffect(() => {
+        /**
+         * Handles clicks outside the profile dropdown to close it.
+         * @param {MouseEvent} event The mouse event.
+         */
         function handleClickOutside(event) {
             if (profileRef.current && !profileRef.current.contains(event.target)) {
-                setIsProfileOpen(false);
+                setIsProfileOpen(false); // Close the menu
             }
         }
         document.addEventListener("mousedown", handleClickOutside);
         return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
+            document.removeEventListener("mousedown", handleClickOutside); // Cleanup listener
         };
     }, []);
 
+    /**
+     * Handles the logout process by navigating to the login page.
+     */
     const handleLogout = async () => {
         navigate("/login");
     };

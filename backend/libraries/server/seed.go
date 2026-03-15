@@ -1,5 +1,9 @@
 package server
 
+// Author: Benjamin Stonestreet
+// Created: 2026-03-01
+// Description: This file contains functions to seed the database with initial data for development and testing purposes.
+
 import (
 	"backend/models"
 	"log"
@@ -12,44 +16,49 @@ import (
 )
 
 const (
-	seedMerchantID        = "seed-merchant-001"
-	seedMerchantID2       = "seed-merchant-002"
-	seedAdminUserID       = "seed-user-admin-001"
-	seedDeveloperUserID   = "seed-user-dev-001"
-	seedOwnerUserID       = "seed-user-owner-001"
-	seedAdminRoleID       = "seed-role-admin-001"
-	seedDeveloperRoleID   = "seed-role-dev-001"
-	seedOwnerRoleID       = "seed-role-owner-001"
-	seedAdminRoleID2      = "seed-role-admin-002"
-	seedDeveloperRoleID2  = "seed-role-dev-002"
-	seedOwnerRoleID2      = "seed-role-owner-002"
-	seedCustomerID        = "seed-customer-001"
-	seedDepositID         = "seed-deposit-001"
-	seedInvoiceID         = "seed-invoice-001"
-	seedMerchantAPIKeyID  = "seed-merchant-api-key-001"
-	seedMerchantAPIKeyID2 = "seed-merchant-api-key-002"
-	seedMerchantAddressID = "seed-merchant-address-001"
+	seedMerchantID         = "seed-merchant-001"
+	seedMerchantID2        = "seed-merchant-002"
+	seedAdminUserID        = "seed-user-admin-001"
+	seedDeveloperUserID    = "seed-user-dev-001"
+	seedOwnerUserID        = "seed-user-owner-001"
+	seedAdminRoleID        = "seed-role-admin-001"
+	seedDeveloperRoleID    = "seed-role-dev-001"
+	seedOwnerRoleID        = "seed-role-owner-001"
+	seedAdminRoleID2       = "seed-role-admin-002"
+	seedDeveloperRoleID2   = "seed-role-dev-002"
+	seedOwnerRoleID2       = "seed-role-owner-002"
+	seedCustomerID         = "seed-customer-001"
+	seedDepositID          = "seed-deposit-001"
+	seedInvoiceID          = "seed-invoice-001"
+	seedMerchantAPIKeyID   = "seed-merchant-api-key-001"
+	seedMerchantAPIKeyID2  = "seed-merchant-api-key-002"
+	seedMerchantAddressID  = "seed-merchant-address-001"
 	seedMerchantAddressID2 = "seed-merchant-address-002"
-	seedMerchantProfileID = "seed-merchant-profile-001"
+	seedMerchantProfileID  = "seed-merchant-profile-001"
 	seedMerchantProfileID2 = "seed-merchant-profile-002"
-	seedMerchantOwnerID   = "seed-merchant-owner-001"
-	seedMerchantOwnerID2  = "seed-merchant-owner-002"
-	seedMerchantWalletID  = "seed-merchant-wallet-001"
-	seedMerchantWalletID2 = "seed-merchant-wallet-002"
-	seedMerchantWebhookID = "seed-merchant-webhook-001"
+	seedMerchantOwnerID    = "seed-merchant-owner-001"
+	seedMerchantOwnerID2   = "seed-merchant-owner-002"
+	seedMerchantWalletID   = "seed-merchant-wallet-001"
+	seedMerchantWalletID2  = "seed-merchant-wallet-002"
+	seedMerchantWebhookID  = "seed-merchant-webhook-001"
 	seedMerchantWebhookID2 = "seed-merchant-webhook-002"
-	seedAdminUsername     = "dev_admin"
-	seedDeveloperUsername = "dev_developer"
-	seedOwnerUsername     = "dev_owner"
-	seedUserPasswordPlain = "password"
-	seedApiKeyHash        = "dev_api_key_hash"
-	seedWebhookKey        = "dev_webhook_key"
-	seedWalletAddress     = "rG3BgRh1xGaySMtvLoz35UZdTg15Htgi6j"
-	seedDateLayout        = "2006-01-02"
+	seedAdminUsername      = "dev_admin"
+	seedDeveloperUsername  = "dev_developer"
+	seedOwnerUsername      = "dev_owner"
+	seedUserPasswordPlain  = "password"
+	seedApiKeyHash         = "dev_api_key_hash"
+	seedWebhookKey         = "dev_webhook_key"
+	seedWalletAddress      = "rG3BgRh1xGaySMtvLoz35UZdTg15Htgi6j"
+	seedDateLayout         = "2006-01-02"
 )
 
+// ResetSeedData removes every row that was created by SeedDevData, in an order
+// that respects foreign-key constraints (leaf rows first, parent rows last).
+// The entire deletion runs inside a single database transaction so the database
+// is never left in a partially-cleaned state.
 func (s *Server) ResetSeedData() error {
 	return s.DB.Transaction(func(tx *gorm.DB) error {
+		// Delete leaf financial records before their parent customer row.
 		if err := tx.Where("deposit_id = ?", seedDepositID).Delete(&models.Deposit{}).Error; err != nil {
 			return err
 		}
@@ -58,10 +67,12 @@ func (s *Server) ResetSeedData() error {
 			return err
 		}
 
+		// Customer must be deleted after its invoices and deposits.
 		if err := tx.Where("customer_id = ?", seedCustomerID).Delete(&models.Customer{}).Error; err != nil {
 			return err
 		}
 
+		// Roles reference both users and merchants, so delete them before either.
 		if err := tx.Where("role_id IN ?", []string{seedAdminRoleID, seedDeveloperRoleID, seedOwnerRoleID, seedAdminRoleID2, seedDeveloperRoleID2, seedOwnerRoleID2}).Delete(&models.Role{}).Error; err != nil {
 			return err
 		}
@@ -70,6 +81,7 @@ func (s *Server) ResetSeedData() error {
 			return err
 		}
 
+		// Delete merchant child entities before the parent Merchant rows.
 		if err := tx.Where("merchant_webhook_key_id = ?", seedMerchantWebhookID).Delete(&models.MerchantWebhookKey{}).Error; err != nil {
 			return err
 		}
@@ -118,6 +130,7 @@ func (s *Server) ResetSeedData() error {
 			return err
 		}
 
+		// Delete parent Merchant rows last.
 		if err := tx.Where("merchant_id = ?", seedMerchantID).Delete(&models.Merchant{}).Error; err != nil {
 			return err
 		}
@@ -130,7 +143,16 @@ func (s *Server) ResetSeedData() error {
 	})
 }
 
+// SeedDevData upserts a complete set of development fixtures into the database.
+// It creates two merchants with full supporting entities (API keys, addresses,
+// business profiles, beneficial owners, crypto wallets, webhook keys), three
+// shared users (admin / developer / owner), cross-assigned roles so each user
+// appears in both merchants, a sample customer, a pending deposit, and an open
+// invoice. All writes are wrapped in a single transaction; an error in any step
+// rolls back the entire seed.
 func (s *Server) SeedDevData() error {
+	// Pre-hash passwords outside the transaction to avoid holding the DB
+	// connection open during expensive bcrypt computation.
 	adminPasswordHash, err := bcrypt.GenerateFromPassword([]byte(seedUserPasswordPlain), bcrypt.DefaultCost)
 	if err != nil {
 		return err
@@ -146,16 +168,19 @@ func (s *Server) SeedDevData() error {
 		return err
 	}
 
+	// Parse fixed seed values into their typed representations.
 	ownerDOB, err := time.Parse(seedDateLayout, "1990-01-01")
 	if err != nil {
 		return err
 	}
 
+	// Ownership stake as a fixed-precision decimal (100%).
 	ownerStake, err := decimal.NewFromString("100.0000")
 	if err != nil {
 		return err
 	}
 
+	// Sample deposit amount and its associated processing fee.
 	depositAmount, err := decimal.NewFromString("245.7500")
 	if err != nil {
 		return err
@@ -166,6 +191,7 @@ func (s *Server) SeedDevData() error {
 		return err
 	}
 
+	// Sample invoice amount and its associated processing fee.
 	invoiceAmount, err := decimal.NewFromString("120.0000")
 	if err != nil {
 		return err
@@ -177,6 +203,7 @@ func (s *Server) SeedDevData() error {
 	}
 
 	return s.DB.Transaction(func(tx *gorm.DB) error {
+		// ── Merchants ────────────────────────────────────────────────────────────
 		merchant := models.Merchant{
 			MerchantID:   seedMerchantID,
 			MerchantName: "Coffee Shop POS",
@@ -193,6 +220,7 @@ func (s *Server) SeedDevData() error {
 			return err
 		}
 
+		// ── API Keys ─────────────────────────────────────────────────────────────
 		merchantAPIKey := models.MerchantAPIKey{
 			MerchantAPIKeyID:         seedMerchantAPIKeyID,
 			MerchantAPIKeyHashed:     seedApiKeyHash,
@@ -211,6 +239,7 @@ func (s *Server) SeedDevData() error {
 			return err
 		}
 
+		// ── Physical Addresses ───────────────────────────────────────────────────
 		merchantAddress := models.MerchantAddress{
 			MerchantAddressID:         seedMerchantAddressID,
 			MerchantAddressMerchantID: seedMerchantID,
@@ -239,6 +268,7 @@ func (s *Server) SeedDevData() error {
 			return err
 		}
 
+		// ── Business Profiles ────────────────────────────────────────────────────
 		merchantProfile := models.MerchantBusinessProfile{
 			MerchantBusinessProfileID:                 seedMerchantProfileID,
 			MerchantBusinessProfileMerchantID:         seedMerchantID,
@@ -273,6 +303,7 @@ func (s *Server) SeedDevData() error {
 			return err
 		}
 
+		// ── Beneficial Owners ────────────────────────────────────────────────────
 		merchantOwner := models.MerchantOwner{
 			MerchantOwnerID:          seedMerchantOwnerID,
 			MerchantOwnerMerchantID:  seedMerchantID,
@@ -301,6 +332,7 @@ func (s *Server) SeedDevData() error {
 			return err
 		}
 
+		// ── Crypto Wallets ───────────────────────────────────────────────────────
 		merchantWallet := models.MerchantCryptoWallet{
 			MerchantCryptoWalletID:         seedMerchantWalletID,
 			MerchantCryptoWalletMerchantID: seedMerchantID,
@@ -321,6 +353,7 @@ func (s *Server) SeedDevData() error {
 			return err
 		}
 
+		// ── Webhook Keys ─────────────────────────────────────────────────────────
 		merchantWebhook := models.MerchantWebhookKey{
 			MerchantWebhookKeyID:         seedMerchantWebhookID,
 			MerchantWebhookKey:           seedWebhookKey,
@@ -339,6 +372,9 @@ func (s *Server) SeedDevData() error {
 			return err
 		}
 
+		// ── Users ────────────────────────────────────────────────────────────────
+		// Three users are created: one per role archetype. Each user's password is
+		// the same plaintext value (seedUserPasswordPlain) stored as a bcrypt hash.
 		adminUser := models.User{
 			UserID:           seedAdminUserID,
 			UserUsername:     seedAdminUsername,
@@ -375,6 +411,8 @@ func (s *Server) SeedDevData() error {
 			return err
 		}
 
+		// ── Roles ────────────────────────────────────────────────────────────────
+		// Merchant 1 roles: admin=dev_admin, developer=dev_developer, owner=dev_owner.
 		adminRole := models.Role{
 			RoleID:         seedAdminRoleID,
 			RoleMerchantID: seedMerchantID,
@@ -405,6 +443,8 @@ func (s *Server) SeedDevData() error {
 			return err
 		}
 
+		// Merchant 2 roles: intentionally cross-assigned (admin=dev_admin,
+		// developer=dev_owner, owner=dev_developer) to test multi-merchant scenarios.
 		adminRole2 := models.Role{
 			RoleID:         seedAdminRoleID2,
 			RoleMerchantID: seedMerchantID2,
@@ -435,6 +475,7 @@ func (s *Server) SeedDevData() error {
 			return err
 		}
 
+		// ── Customer / Financial Records ─────────────────────────────────────────
 		customer := models.Customer{
 			CustomerID:         seedCustomerID,
 			CustomerMerchantID: seedMerchantID,
@@ -446,6 +487,7 @@ func (s *Server) SeedDevData() error {
 			return err
 		}
 
+		// A sample pending deposit that demonstrates the deposit lifecycle.
 		deposit := models.Deposit{
 			DepositID:         seedDepositID,
 			DepositAmount:     depositAmount,
@@ -459,6 +501,7 @@ func (s *Server) SeedDevData() error {
 			return err
 		}
 
+		// A sample open invoice that the widget demo page can reference via seedInvoiceID.
 		invoice := models.Invoice{
 			InvoiceID:            seedInvoiceID,
 			InvoiceAmountCharged: invoiceAmount,
@@ -478,6 +521,9 @@ func (s *Server) SeedDevData() error {
 	})
 }
 
+// upsert inserts the given record or, on a primary-key conflict, updates every
+// column to the provided values. This makes SeedDevData idempotent: calling it
+// multiple times on a running database always converges to the same state.
 func upsert(tx *gorm.DB, value interface{}) error {
 	return tx.Clauses(clause.OnConflict{UpdateAll: true}).Create(value).Error
 }

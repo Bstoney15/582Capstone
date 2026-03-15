@@ -1,15 +1,20 @@
 package routes
 
+// Author: Benjamin Stonestreet
+// Created: 2024-02-02
+
 import (
 	"net/http"
 
 	"gorm.io/gorm"
 )
 
+// Handler encapsulates database dependencies for all API endpoints.
 type Handler struct {
 	DB *gorm.DB
 }
 
+// NewHandler initializes a new Handler with a database connection.
 func NewHandler(db *gorm.DB) *Handler {
 	return &Handler{
 		DB: db,
@@ -20,6 +25,8 @@ func NewHandler(db *gorm.DB) *Handler {
 All api routes must be defined in this file. All routes must also be prefixed with api (/api/route)
 try to group routes by functionality and authentication requirements
 */
+
+// RegisterRoutes sets up all the HTTP route handlers on the provided ServeMux.
 func (h *Handler) RegisterRoutes(s *http.ServeMux) {
 	// Widget Static Routes
 	s.HandleFunc("GET /widget/checkout.js", h.GetCheckoutWidget)

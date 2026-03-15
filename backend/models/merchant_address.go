@@ -1,5 +1,10 @@
 package models
 
+// Author: Benjamin Stonestreet
+// Created: 2024-02-02
+
+// MerchantAddress stores the physical address details for a merchant,
+// including verification status.
 type MerchantAddress struct {
 	MerchantAddressID         string   `gorm:"primaryKey;type:varchar(36)" json:"merchant_address_id"`
 	MerchantAddressMerchantID string   `gorm:"not null;type:varchar(36)" json:"merchant_address_merchant_id"`
@@ -12,6 +17,7 @@ type MerchantAddress struct {
 	MerchantAddressVerified   bool     `gorm:"not null" json:"merchant_address_verified"`
 }
 
+// TableName overrides the default GORM table name to "merchant_address".
 func (MerchantAddress) TableName() string {
 	return "merchant_address"
 }

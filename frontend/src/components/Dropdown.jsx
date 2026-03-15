@@ -1,7 +1,22 @@
+// Author: Benjamin Stonestreet
+// Created: 2026-02-21
+// Description: This component is a dropdown menu for the application.
+
 import { useState, useRef, useEffect } from "react";
 import { ChevronDownIcon } from "@heroicons/react/20/solid";
 import "./Dropdown.css";
 
+/**
+ * A customizable dropdown menu component.
+ * @param {Object} props
+ * @param {Array} props.options List of options to display.
+ * @param {Object} props.selectedItem The currently selected item.
+ * @param {Function} props.onSelect Callback invoked when an option is selected.
+ * @param {string} props.placeholder Text to display when no option is selected.
+ * @param {string} props.labelKey Property key to use for the display label.
+ * @param {string} props.valueKey Property key to use for the unique identifier.
+ * @returns {JSX.Element} The rendered Dropdown.
+ */
 export default function Dropdown({
     options = [],
     selectedItem = null,
@@ -13,7 +28,12 @@ export default function Dropdown({
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
 
+    // Effect to close the dropdown when clicking outside of it
     useEffect(() => {
+        /**
+         * Handles clicks outside the dropdown to close it.
+         * @param {MouseEvent} event The mouse event.
+         */
         function handleClickOutside(event) {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
                 setIsOpen(false);
@@ -21,7 +41,7 @@ export default function Dropdown({
         }
         document.addEventListener("mousedown", handleClickOutside);
         return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
+            document.removeEventListener("mousedown", handleClickOutside); // Cleanup listener
         };
     }, []);
 

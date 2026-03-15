@@ -1,11 +1,16 @@
 package models
 
+// Author: Benjamin Stonestreet
+// Created: 2024-02-02
+
 import (
 	"time"
 
 	"github.com/shopspring/decimal"
 )
 
+// Invoice represents a billing record for a specific customer. It tracks the amount
+// charged, the current status of the payment, any associated fees, and the cryptocurrency used.
 type Invoice struct {
 	InvoiceID            string          `gorm:"primaryKey;type:varchar(36)" json:"invoice_id"`
 	InvoiceDateTime      time.Time       `gorm:"not null;autoCreateTime" json:"invoice_date_time"`
@@ -18,6 +23,7 @@ type Invoice struct {
 	Customer             Customer        `gorm:"foreignKey:InvoiceCustomerID;references:CustomerID" json:"customer,omitempty"`
 }
 
+// TableName overrides the default GORM table name to "invoice".
 func (Invoice) TableName() string {
 	return "invoice"
 }

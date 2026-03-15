@@ -1,5 +1,10 @@
 package models
 
+// Author: Benjamin Stonestreet
+// Created: 2024-02-02
+
+// Customer represents a customer of a merchant, storing their basic contact info
+// and tying them to a specific merchant via CustomerMerchantID.
 type Customer struct {
 	CustomerID         string   `gorm:"primaryKey;type:varchar(36)" json:"customer_id"`
 	CustomerMerchantID string   `gorm:"not null;type:varchar(36)" json:"customer_merchant_id"`
@@ -9,6 +14,7 @@ type Customer struct {
 	CustomerEmail      string   `json:"customer_email"`
 }
 
+// TableName overrides the default GORM table name to specifically be "merchant_customers".
 func (Customer) TableName() string {
 	return "merchant_customers"
 }
