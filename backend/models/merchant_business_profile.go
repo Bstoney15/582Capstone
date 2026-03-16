@@ -1,5 +1,10 @@
 package models
 
+// Author: Benjamin Stonestreet
+// Created: 2024-02-02
+
+// MerchantBusinessProfile stores the business details of a merchant, such as
+// DBA name, tax ID, legal structure, and contact information.
 type MerchantBusinessProfile struct {
 	MerchantBusinessProfileID                 string   `gorm:"primaryKey;type:varchar(36)" json:"merchant_business_profile_id"`
 	MerchantBusinessProfileMerchantID         string   `gorm:"not null;type:varchar(36)" json:"merchant_business_profile_merchant_id"`
@@ -15,6 +20,7 @@ type MerchantBusinessProfile struct {
 	MerchantBusinessProfileEmail              string   `gorm:"not null" json:"merchant_business_profile_email"`
 }
 
+// TableName overrides the default GORM table name to "merchant_business_profile".
 func (MerchantBusinessProfile) TableName() string {
 	return "merchant_business_profile"
 }

@@ -1,5 +1,8 @@
 package routes
 
+// Author: Benjamin Stonestreet
+// Created: 2024-03-08
+
 import (
 	"backend/models"
 	"encoding/json"
@@ -11,15 +14,18 @@ import (
 	"gorm.io/gorm"
 )
 
+// InvoiceStatusEvent represents the payload sent over SSE for an invoice update.
 type InvoiceStatusEvent struct {
 	InvoiceID string `json:"invoice_id"`
 	Status    string `json:"status"`
 }
 
+// isTerminalInvoiceStatus returns true if the invoice status requires no further updates.
 func isTerminalInvoiceStatus(status string) bool {
 	return status == "paid" || status == "verification_failed"
 }
 
+// getInvoiceStatus retrieves the current status of an invoice from the database.
 func (h *Handler) getInvoiceStatus(invoiceID string) (string, error) {
 	var invoice models.Invoice
 	err := h.DB.Select("invoice_status").Where("invoice_id = ?", invoiceID).First(&invoice).Error
@@ -30,6 +36,7 @@ func (h *Handler) getInvoiceStatus(invoiceID string) (string, error) {
 	return invoice.InvoiceStatus, nil
 }
 
+// writeSSEEvent serializes an InvoiceStatusEvent and flushes it to the client.
 func writeSSEEvent(w http.ResponseWriter, flusher http.Flusher, payload InvoiceStatusEvent) error {
 	body, err := json.Marshal(payload)
 	if err != nil {
@@ -43,6 +50,7 @@ func writeSSEEvent(w http.ResponseWriter, flusher http.Flusher, payload InvoiceS
 	return nil
 }
 
+// StreamInvoiceEventsHandler opens a Server-Sent Events stream to push invoice updates to the client.
 func (h *Handler) StreamInvoiceEventsHandler(w http.ResponseWriter, r *http.Request) {
 	applyWidgetCORSHeaders(w, r)
 

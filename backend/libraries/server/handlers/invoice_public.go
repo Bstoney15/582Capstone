@@ -1,5 +1,9 @@
 package routes
 
+// Author: Benjamin Stonestreet
+// Created: 2024-03-08
+
+
 import (
 	"backend/models"
 	"encoding/json"
@@ -10,6 +14,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// InvoiceCheckoutResponse represents the data returned for public checkout viewing.
 type InvoiceCheckoutResponse struct {
 	InvoiceID       string `json:"invoiceId"`
 	AmountDrops     string `json:"amountDrops"`
@@ -17,6 +22,7 @@ type InvoiceCheckoutResponse struct {
 	MerchantAddress string `json:"merchantAddress"`
 }
 
+// invoiceAmountToDrops converts a decimal XRP amount into stringified drops.
 func invoiceAmountToDrops(amount decimal.Decimal) string {
 	drops := amount.Mul(decimal.NewFromInt(1_000_000)).Round(0)
 	if drops.IsNegative() {
@@ -26,6 +32,7 @@ func invoiceAmountToDrops(amount decimal.Decimal) string {
 	return drops.StringFixed(0)
 }
 
+// GetInvoiceForCheckoutHandler retrieves an invoice for the public facing checkout widget.
 func (h *Handler) GetInvoiceForCheckoutHandler(w http.ResponseWriter, r *http.Request) {
 	applyWidgetCORSHeaders(w, r)
 

@@ -1,11 +1,16 @@
 package main
 
+// Author: Benjamin Stonestreet
+// Created: 2024-02-02
+
 import (
 	"fmt"
 	"backend/libraries/server"
 )
 
 // realistically we shouldnt need any more code in this file but you never know
+
+// main is the entry point of the backend service.
 func main() {
 	fmt.Println("Starting Backend Service...")
 

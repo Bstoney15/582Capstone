@@ -21,6 +21,8 @@ const SessionCookieName = "session_id"
 // secret key used to sign the tokens. In a production app, this should be an environment variable.
 var jwtKey = []byte(getJWTKey())
 
+// getJWTKey retrieves the JWT secret key from the environment,
+// or falls back to a default value if not set.
 func getJWTKey() string {
 	key := os.Getenv("JWT_SECRET_KEY")
 	if key == "" {
@@ -30,7 +32,8 @@ func getJWTKey() string {
 	return key
 }
 
-// could add more fields to this and store in db so user can see historical how they have done each session
+// sessionData stores parsed token information including the user ID,
+// the full token string, and its expiration time.
 type sessionData struct {
 	UserID    string
 	SessionID string

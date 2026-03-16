@@ -1,7 +1,11 @@
 package models
 
+// Author: Benjamin Stonestreet
+// Created: 2024-02-02
+
 import "time"
 
+// XRPLPayment represents a payment transaction processed on the XRPL.
 type XRPLPayment struct {
 	TxHash           string    `gorm:"primaryKey;type:varchar(128)" json:"tx_hash"`
 	Destination      string    `gorm:"not null" json:"destination"`
@@ -13,6 +17,7 @@ type XRPLPayment struct {
 	WalletMerchantID string    `gorm:"not null;type:varchar(36)" json:"wallet_merchant_id"`
 }
 
+// TableName sets the table name for XRPLPayment.
 func (XRPLPayment) TableName() string {
 	return "xrpl_payment"
 }

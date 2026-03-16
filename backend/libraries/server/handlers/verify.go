@@ -1,5 +1,9 @@
 package routes
 
+// Author: Benjamin Stonestreet
+// Created: 2024-03-08
+
+
 import (
 	"backend/models"
 	"encoding/json"
@@ -13,11 +17,13 @@ import (
 var xrplTxHashRegex = regexp.MustCompile(`^[A-Fa-f0-9]{64}$`)
 var crossmarkPayloadIDRegex = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`)
 
+// VerifyInvoiceRequest is the JSON payload for verifying an invoice payment.
 type VerifyInvoiceRequest struct {
 	InvoiceID string `json:"invoice_id"`
 	TxHash    string `json:"tx_hash"`
 }
 
+// VerifyInvoicePaymentHandler queues an invoice verification in the background.
 func (h *Handler) VerifyInvoicePaymentHandler(w http.ResponseWriter, r *http.Request) {
 	applyWidgetCORSHeaders(w, r)
 
@@ -52,6 +58,7 @@ func (h *Handler) VerifyInvoicePaymentHandler(w http.ResponseWriter, r *http.Req
 	})
 }
 
+// verifyInvoiceInBackground updates the invoice status based on the transaction hash format.
 func (h *Handler) verifyInvoiceInBackground(invoiceID string, txHash string) {
 	if xrplTxHashRegex.MatchString(txHash) {
 		h.DB.Model(&models.Invoice{}).

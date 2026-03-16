@@ -1,11 +1,16 @@
 package models
 
+// Author: Benjamin Stonestreet
+// Created: 2024-02-02
+
 import (
 	"time"
 
 	"github.com/shopspring/decimal"
 )
 
+// MerchantOwner stores information about an individual owner or stakeholder
+// associated with a specific merchant.
 type MerchantOwner struct {
 	MerchantOwnerID          string          `gorm:"primaryKey;type:varchar(36)" json:"merchant_owner_id"`
 	MerchantOwnerMerchantID  string          `gorm:"not null;type:varchar(36)" json:"merchant_owner_merchant_id"`
@@ -18,6 +23,7 @@ type MerchantOwner struct {
 	MerchantOwnerStake       decimal.Decimal `gorm:"not null;type:decimal(16,4)" json:"merchant_owner_stake"`
 }
 
+// TableName overrides the default GORM table name to "merchant_owner".
 func (MerchantOwner) TableName() string {
 	return "merchant_owner"
 }
