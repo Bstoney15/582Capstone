@@ -30,6 +30,7 @@ try to group routes by functionality and authentication requirements
 func (h *Handler) RegisterRoutes(s *http.ServeMux) {
 	// Widget Static Routes
 	s.HandleFunc("GET /widget/checkout.js", h.GetCheckoutWidget)
+	s.HandleFunc("GET /api/widget/checkout.js", h.GetCheckoutWidget)
 
 	// No Auth Routes
 	s.HandleFunc("GET /api/health", h.HealthCheckHandler)

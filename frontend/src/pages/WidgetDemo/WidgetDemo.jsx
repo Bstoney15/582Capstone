@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 // DOM id used to find/remove a previously injected widget <script> tag
 const widgetScriptId = "xrpay-widget-script";
 // URL of the checkout widget script served by the backend; can be overridden per environment.
-const widgetScriptSrc = import.meta.env.VITE_WIDGET_SCRIPT_SRC || "/widget/checkout.js";
+const widgetScriptSrc = import.meta.env.VITE_WIDGET_SCRIPT_SRC || "/api/widget/checkout.js";
 // Demo API key used when creating invoices from this storefront demo.
 const demoInvoiceApiKey = import.meta.env.VITE_WIDGET_DEMO_INVOICE_API_KEY || "dev_demo_invoice_key";
 
