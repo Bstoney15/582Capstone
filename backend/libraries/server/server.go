@@ -65,8 +65,11 @@ func (s *Server) Start(address string) error {
 		return err
 	}
 
-	// Only seed fixture data outside of production to avoid polluting live data.
-	if os.Getenv("production") != "true" {
+	if os.Getenv("PRODUCTION") == "true" {
+		if err := s.EnsureProductionDemoMerchantSeeded(); err != nil {
+			return err
+		}
+	} else {
 		if err := s.SeedDevData(); err != nil {
 			return err
 		}

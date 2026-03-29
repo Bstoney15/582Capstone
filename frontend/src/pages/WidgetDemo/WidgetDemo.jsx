@@ -7,12 +7,10 @@ import { useEffect, useMemo, useState } from "react";
 
 // DOM id used to find/remove a previously injected widget <script> tag
 const widgetScriptId = "xrpay-widget-script";
-// URL of the checkout widget script served by the backend; cache-busted with a date version query param
-const widgetScriptSrc = "http://localhost:8080/widget/checkout.js?v=20260301-2";
-// Base URL for all backend API calls (invoice creation, etc.)
-const backendApiBaseUrl = "http://localhost:8080";
-// Demo API key used when creating invoices from this storefront demo
-const devInvoiceApiKey = "dev_demo_invoice_key";
+// URL of the checkout widget script served by the backend; can be overridden per environment.
+const widgetScriptSrc = import.meta.env.VITE_WIDGET_SCRIPT_SRC || "/widget/checkout.js";
+// Demo API key used when creating invoices from this storefront demo.
+const demoInvoiceApiKey = import.meta.env.VITE_WIDGET_DEMO_INVOICE_API_KEY || "dev_demo_invoice_key";
 
 // Static catalogue of items available in the demo storefront
 const storeItems = [
@@ -140,7 +138,7 @@ export default function WidgetDemo() {
         invoiceId: "seed-invoice-001",
         triggerSelector: "#widget-demo-hidden-trigger",
         successUrl,
-        apiBaseUrl: backendApiBaseUrl,
+        apiBaseUrl: "",
         debug: true,
       });
 
@@ -162,14 +160,14 @@ export default function WidgetDemo() {
     // Four-decimal precision required for XRP amounts by the backend API
     const compatibilityAmountXRP = amountXRP.toFixed(4);
 
-    const response = await fetch(`${backendApiBaseUrl}/api/invoices`, {
+    const response = await fetch("/api/invoices", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
       },
       body: JSON.stringify({
-        merchant_api_key: devInvoiceApiKey,
+        merchant_api_key: demoInvoiceApiKey,
         amount_usd: amountUSD,
         amount_xrp: compatibilityAmountXRP,
       }),

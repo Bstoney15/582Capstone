@@ -18,8 +18,6 @@ import (
 	"gorm.io/gorm"
 )
 
-const devInvoiceAPIKey = "dev_demo_invoice_key"
-
 const (
 	defaultFallbackUSDPerXRP = "2.0000"
 	xrpUSDQuoteURL           = "https://api.coinbase.com/v2/prices/XRP-USD/spot"
@@ -125,7 +123,24 @@ func (h *Handler) CreateInvoiceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if request.MerchantAPIKey != devInvoiceAPIKey {
+	merchantAPIKey := strings.TrimSpace(request.MerchantAPIKey)
+	if merchantAPIKey == "" {
+		http.Error(w, "invalid merchant api key", http.StatusUnauthorized)
+		return
+	}
+
+	var apiKey models.MerchantAPIKey
+	if err := h.DB.Where("merchant_api_key_hashed = ?", merchantAPIKey).First(&apiKey).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "invalid merchant api key", http.StatusUnauthorized)
+			return
+		}
+
+		http.Error(w, "failed to validate merchant api key", http.StatusInternalServerError)
+		return
+	}
+
+	if strings.TrimSpace(apiKey.MerchantAPIKeyMerchantID) == "" {
 		http.Error(w, "invalid merchant api key", http.StatusUnauthorized)
 		return
 	}
@@ -173,9 +188,9 @@ func (h *Handler) CreateInvoiceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var customer models.Customer
-	if err := h.DB.Order("customer_id ASC").First(&customer).Error; err != nil {
+	if err := h.DB.Where("customer_merchant_id = ?", apiKey.MerchantAPIKeyMerchantID).Order("customer_id ASC").First(&customer).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			http.Error(w, "no customer exists to attach invoice", http.StatusNotFound)
+			http.Error(w, "no customer exists for this merchant", http.StatusNotFound)
 			return
 		}
 

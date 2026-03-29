@@ -6,6 +6,7 @@ package server
 
 import (
 	"backend/models"
+	"errors"
 	"log"
 	"time"
 
@@ -46,7 +47,7 @@ const (
 	seedDeveloperUsername  = "dev_developer"
 	seedOwnerUsername      = "dev_owner"
 	seedUserPasswordPlain  = "password"
-	seedApiKeyHash         = "dev_api_key_hash"
+	seedApiKeyHash         = "dev_demo_invoice_key"
 	seedWebhookKey         = "dev_webhook_key"
 	seedWalletAddress      = "rG3BgRh1xGaySMtvLoz35UZdTg15Htgi6j"
 	seedDateLayout         = "2006-01-02"
@@ -519,6 +520,74 @@ func (s *Server) SeedDevData() error {
 
 		return nil
 	})
+}
+
+// SeedProductionDemoMerchant upserts only the public demo merchant entities
+// required for widget checkout in production environments. It intentionally
+// does not create users or roles, so no one can authenticate into this merchant
+// through dashboard login flows.
+func (s *Server) SeedProductionDemoMerchant() error {
+	return s.DB.Transaction(func(tx *gorm.DB) error {
+		merchant := models.Merchant{
+			MerchantID:   seedMerchantID,
+			MerchantName: "Coffee Shop POS",
+		}
+		if err := upsert(tx, &merchant); err != nil {
+			return err
+		}
+
+		merchantAPIKey := models.MerchantAPIKey{
+			MerchantAPIKeyID:         seedMerchantAPIKeyID,
+			MerchantAPIKeyHashed:     seedApiKeyHash,
+			MerchantAPIKeyMerchantID: seedMerchantID,
+		}
+		if err := upsert(tx, &merchantAPIKey); err != nil {
+			return err
+		}
+
+		merchantWallet := models.MerchantCryptoWallet{
+			MerchantCryptoWalletID:         seedMerchantWalletID,
+			MerchantCryptoWalletMerchantID: seedMerchantID,
+			MerchantCryptoWalletAddress:    seedWalletAddress,
+			MerchantCryptoWalletVerified:   true,
+		}
+		if err := upsert(tx, &merchantWallet); err != nil {
+			return err
+		}
+
+		customer := models.Customer{
+			CustomerID:         seedCustomerID,
+			CustomerMerchantID: seedMerchantID,
+			CustomerFirstName:  "Demo",
+			CustomerLastName:   "Customer",
+			CustomerEmail:      "demo.customer@xrpay.example",
+		}
+		if err := upsert(tx, &customer); err != nil {
+			return err
+		}
+
+		log.Printf("Seeded production demo merchant %s (without users/roles)", seedMerchantID)
+
+		return nil
+	})
+}
+
+// EnsureProductionDemoMerchantSeeded checks whether the production demo
+// merchant already exists. If it does, the function is a no-op. If not, it
+// seeds the minimal demo merchant data required by the public widget flow.
+func (s *Server) EnsureProductionDemoMerchantSeeded() error {
+	var merchant models.Merchant
+	err := s.DB.Where("merchant_id = ?", seedMerchantID).First(&merchant).Error
+	if err == nil {
+		log.Printf("Production demo merchant %s already exists; skipping seed", seedMerchantID)
+		return nil
+	}
+
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+
+	return s.SeedProductionDemoMerchant()
 }
 
 // upsert inserts the given record or, on a primary-key conflict, updates every
