@@ -33,12 +33,14 @@ func NewServer() *Server {
 
 	driver := sqlite.Open("./xrpay.db")
 
-	if os.Getenv("production") == "true" {
-		log.Println("Running in production mode")
-		// Hard-coded DSN for the Docker Compose MySQL container; override via
-		// environment variable injection in a real deployment.
-		dsn := "root:secret@tcp(mysql-container:3306)/xrpay?charset=utf8mb4&parseTime=True&loc=Local"
+	dsn := os.Getenv("DATABASE_URL")
+
+	if dsn != "" {
+		log.Println("Using MySQL (DATABASE_URL detected)")
 		driver = mysql.Open(dsn)
+	} else {
+		log.Println("Using SQLite (fallback)")
+		driver = sqlite.Open("./xrpay.db")
 	}
 
 	db, err := gorm.Open(driver, &gorm.Config{})
