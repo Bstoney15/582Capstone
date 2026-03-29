@@ -1,9 +1,12 @@
 package routes
 
 import (
+	"backend/libraries/sessionManager"
 	"backend/models"
 	"encoding/json"
+	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -28,7 +31,7 @@ type DashboardInvoiceActivity struct {
 	DateTime string `json:"dateTime"`
 }
 
-func queryDashboardGrossVolumeStats(db *gorm.DB, now time.Time) (DashboardGrossVolumeStats, error) {
+func queryDashboardGrossVolumeStats(db *gorm.DB, merchantID string, now time.Time) (DashboardGrossVolumeStats, error) {
 	type totalResult struct {
 		Total decimal.Decimal `gorm:"column:total"`
 	}
@@ -36,7 +39,9 @@ func queryDashboardGrossVolumeStats(db *gorm.DB, now time.Time) (DashboardGrossV
 	sumSince := func(since time.Time) (int, error) {
 		result := totalResult{Total: decimal.Zero}
 		err := db.Model(&models.Invoice{}).
+			Joins("JOIN merchant_customers ON merchant_customers.customer_id = invoice.invoice_customer_id").
 			Select("COALESCE(SUM(invoice_amount_charged), 0) AS total").
+			Where("merchant_customers.customer_merchant_id = ?", merchantID).
 			Where("invoice_date_time >= ?", since).
 			Scan(&result).Error
 		if err != nil {
@@ -67,7 +72,7 @@ func queryDashboardGrossVolumeStats(db *gorm.DB, now time.Time) (DashboardGrossV
 	return stats, nil
 }
 
-func queryDashboardRecentActivity(db *gorm.DB, limit int) ([]DashboardInvoiceActivity, error) {
+func queryDashboardRecentActivity(db *gorm.DB, merchantID string, limit int) ([]DashboardInvoiceActivity, error) {
 	if limit <= 0 {
 		limit = 5
 	}
@@ -81,7 +86,9 @@ func queryDashboardRecentActivity(db *gorm.DB, limit int) ([]DashboardInvoiceAct
 
 	rows := []activityRow{}
 	err := db.Model(&models.Invoice{}).
+		Joins("JOIN merchant_customers ON merchant_customers.customer_id = invoice.invoice_customer_id").
 		Select("invoice_id, invoice_amount_charged, invoice_status, invoice_date_time").
+		Where("merchant_customers.customer_merchant_id = ?", merchantID).
 		Order("invoice_date_time DESC").
 		Limit(limit).
 		Find(&rows).Error
@@ -116,13 +123,47 @@ func mapInvoiceStatusForDashboard(status string) string {
 }
 
 func (h *Handler) GetDashboardHandler(w http.ResponseWriter, r *http.Request) {
-	stats, err := queryDashboardGrossVolumeStats(h.DB, time.Now())
+	sessionToken, err := sessionManager.GetSessionToken(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	sessionData, _, active := sessionManager.CheckSession(sessionToken)
+	if !active {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	merchantID := strings.TrimSpace(r.URL.Query().Get("merchant_id"))
+	if merchantID == "" {
+		http.Error(w, "merchant_id is required", http.StatusBadRequest)
+		return
+	}
+
+	var role models.Role
+	if err := h.DB.Where(
+		"role_user_id = ? AND role_merchant_id = ? AND role_name IN ?",
+		sessionData.UserID,
+		merchantID,
+		[]string{models.RoleDeveloper, models.RoleAdmin, models.RoleOwner},
+	).First(&role).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+
+		http.Error(w, "failed to verify merchant access", http.StatusInternalServerError)
+		return
+	}
+
+	stats, err := queryDashboardGrossVolumeStats(h.DB, merchantID, time.Now())
 	if err != nil {
 		http.Error(w, "failed to fetch dashboard stats", http.StatusInternalServerError)
 		return
 	}
 
-	recentActivity, err := queryDashboardRecentActivity(h.DB, 5)
+	recentActivity, err := queryDashboardRecentActivity(h.DB, merchantID, 5)
 	if err != nil {
 		http.Error(w, "failed to fetch dashboard activity", http.StatusInternalServerError)
 		return

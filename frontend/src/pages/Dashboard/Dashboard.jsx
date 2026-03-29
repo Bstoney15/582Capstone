@@ -6,15 +6,29 @@ export default function Dashboard() {
 
     const [dashboardData, setDashboardData] = useState(null);
     const [dashboardLoading, setDashboardLoading] = useState(false);
+    const [dashboardError, setDashboardError] = useState("");
 
     useEffect(() => {
+        if (!selectedMerchant?.id) {
+            setDashboardData(null);
+            setDashboardError("");
+            setDashboardLoading(false);
+            return;
+        }
+
         const fetchDashboard = async () => {
             try {
                 setDashboardLoading(true);
+                setDashboardError("");
 
-                const res = await fetch("/api/dashboard");
+                const merchantID = encodeURIComponent(selectedMerchant.id);
+                const res = await fetch(`/api/dashboard?merchant_id=${merchantID}`);
 
                 if (!res.ok) {
+                    if (res.status === 403) {
+                        throw new Error("You do not have access to this merchant dashboard.");
+                    }
+
                     throw new Error("Failed to fetch dashboard");
                 }
 
@@ -22,13 +36,15 @@ export default function Dashboard() {
                 setDashboardData(data);
             } catch (err) {
                 console.error("Dashboard error:", err);
+                setDashboardData(null);
+                setDashboardError(err instanceof Error ? err.message : "Failed to load dashboard.");
             } finally {
                 setDashboardLoading(false);
             }
         };
 
         fetchDashboard();
-    }, []);
+    }, [selectedMerchant?.id]);
 
     const stats = dashboardData
         ? [
@@ -77,14 +93,29 @@ export default function Dashboard() {
         return <div style={{ padding: "2rem" }}>Loading dashboard data...</div>;
     }
 
+    if (!selectedMerchant) {
+        return (
+            <div style={{ padding: "2rem", maxWidth: "900px", margin: "0 auto" }}>
+                <h1 style={{ margin: 0 }}>Dashboard</h1>
+                <p style={{ marginTop: "0.75rem", opacity: 0.8 }}>
+                    No merchant selected. Create a merchant or select one from the account dropdown to view dashboard stats.
+                </p>
+            </div>
+        );
+    }
+
     return (
         <div style={{ padding: "2rem", maxWidth: "1200px", margin: "0 auto" }}>
             <div style={{ marginBottom: "1.25rem" }}>
                 <h1 style={{ margin: 0 }}>Dashboard</h1>
                 <p style={{ margin: "0.4rem 0 0", opacity: 0.75 }}>
-                    {selectedMerchant?.name || "No merchant selected"} performance overview
+                    {selectedMerchant.name} performance overview
                 </p>
             </div>
+
+            {dashboardError && (
+                <div style={{ marginBottom: "1rem", color: "#991b1b" }}>{dashboardError}</div>
+            )}
 
             <div
                 style={{
