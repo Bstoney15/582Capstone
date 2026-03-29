@@ -4,21 +4,18 @@ package routes
 // Created: 2024-03-08
 
 import (
+	widgetstatic "backend/static/widget"
 	"net/http"
-	"os"
-	"path/filepath"
 )
 
 // GetCheckoutWidget serves the static MyPay checkout script payload to clients.
 func (h *Handler) GetCheckoutWidget(w http.ResponseWriter, r *http.Request) {
-
-	widgetPath := filepath.Clean("./static/widget/checkout.js")
-
-	if _, err := os.Stat(widgetPath); err != nil {
+	if len(widgetstatic.CheckoutJS) == 0 {
 		http.Error(w, "checkout widget not found", http.StatusNotFound)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
-	http.ServeFile(w, r, widgetPath)
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(widgetstatic.CheckoutJS)
 }
