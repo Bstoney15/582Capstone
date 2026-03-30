@@ -48,6 +48,7 @@ func (h *Handler) RegisterRoutes(s *http.ServeMux) {
 	s.HandleFunc("GET /api/user/auth", h.CheckAuthHandler)
 	s.HandleFunc("GET /api/user/merchants", h.GetMerchantsHandler)
 	s.HandleFunc("GET /api/user/info", h.GetUserInfo)
+	s.HandleFunc("DELETE /api/user/merchants/{merchant_id}", h.LeaveMerchantHandler)
 
 	// Developer and above Routes
 
