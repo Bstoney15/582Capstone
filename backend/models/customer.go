@@ -1,7 +1,7 @@
 package models
 
 // Author: Benjamin Stonestreet
-// Created: 2024-02-02
+// Created: 2026-02-02
 
 // Customer represents a customer of a merchant, storing their basic contact info
 // and tying them to a specific merchant via CustomerMerchantID.

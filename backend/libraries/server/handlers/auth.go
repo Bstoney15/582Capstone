@@ -1,7 +1,7 @@
 package routes
 
 // Author: Benjamin Stonestreet
-// Created: 2024-02-20
+// Created: 2026-02-20
 // Description:
 // This file implements the CheckAuthHandler, which verifies the user's session
 // and returns their authentication status. It checks for a valid session token

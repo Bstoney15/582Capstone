@@ -1,7 +1,7 @@
 package models
 
 // Author: Benjamin Stonestreet
-// Created: 2024-02-02
+// Created: 2026-02-02
 
 // Role definitions for authorization boundaries within a merchant organization.
 const (

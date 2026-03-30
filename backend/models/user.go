@@ -1,7 +1,7 @@
 package models
 
 // Author: Benjamin Stonestreet
-// Created: 2024-02-02
+// Created: 2026-02-02
 
 // User represents a registered user who can hold roles across multiple merchants.
 type User struct {

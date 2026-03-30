@@ -1,7 +1,7 @@
 package routes
 
 // author: Benjamin Stonestreet
-// created: 2024-03-08
+// created: 2026-03-08
 // description:
 // This file implements the WidgetPreflightHandler, which handles CORS preflight
 // requests from the XRPay checkout widget. It applies the necessary CORS headers

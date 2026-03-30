@@ -3,7 +3,7 @@ package models
 import "time"
 
 // Author: Benjamin Stonestreet
-// Created: 2024-02-02
+// Created: 2026-02-02
 
 // MerchantAPIKey stores a hashed API key that allows merchants to authenticate
 // requests to the MyPay API.

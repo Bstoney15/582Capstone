@@ -1,7 +1,7 @@
 package models
 
 // Author: Benjamin Stonestreet
-// Created: 2024-02-02
+// Created: 2026-02-02
 
 // MerchantCryptoWallet holds the XRPL wallet address and verification status
 // for a merchant to receive payments.

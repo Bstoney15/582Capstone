@@ -1,7 +1,7 @@
 package routes
 
 // Author: Benjamin Stonestreet
-// Created: 2024-02-02
+// Created: 2026-02-02
 // Description:
 // This file implements the HealthCheckHandler, which provides a simple endpoint
 // for monitoring the health of the server. It responds with a 200 OK status and

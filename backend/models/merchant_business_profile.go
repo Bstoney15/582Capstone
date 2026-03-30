@@ -1,7 +1,7 @@
 package models
 
 // Author: Benjamin Stonestreet
-// Created: 2024-02-02
+// Created: 2026-02-02
 
 // MerchantBusinessProfile stores the business details of a merchant, such as
 // DBA name, tax ID, legal structure, and contact information.
