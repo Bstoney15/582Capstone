@@ -61,4 +61,9 @@ func (h *Handler) RegisterRoutes(s *http.ServeMux) {
 	s.HandleFunc("DELETE /api/merchant/remove-user", h.RemoveMerchantUserHandler)
 	s.HandleFunc("GET /api/merchant/get-wallet", h.GetMerchantWalletHandler)
 	s.HandleFunc("PATCH /api/merchant/set-wallet", h.SetMerchantWalletHandler)
+
+	// Merchant API Key Routes (all merchant roles)
+	s.HandleFunc("GET /api/merchant/api_key", h.GetMerchantAPIKeysHandler)
+	s.HandleFunc("POST /api/merchant/api_key", h.CreateMerchantAPIKeyHandler)
+	s.HandleFunc("DELETE /api/merchant/api_key/{api_key}", h.DeleteMerchantAPIKeyHandler)
 }

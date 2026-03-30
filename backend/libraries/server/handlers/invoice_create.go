@@ -129,8 +129,10 @@ func (h *Handler) CreateInvoiceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	merchantAPIKeyHash := hashAPIKey(merchantAPIKey)
+
 	var apiKey models.MerchantAPIKey
-	if err := h.DB.Where("merchant_api_key_hashed = ?", merchantAPIKey).First(&apiKey).Error; err != nil {
+	if err := h.DB.Where("merchant_api_key_hashed IN ?", []string{merchantAPIKeyHash, merchantAPIKey}).First(&apiKey).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			http.Error(w, "invalid merchant api key", http.StatusUnauthorized)
 			return

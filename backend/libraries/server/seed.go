@@ -47,7 +47,7 @@ const (
 	seedDeveloperUsername  = "dev_developer"
 	seedOwnerUsername      = "dev_owner"
 	seedUserPasswordPlain  = "password"
-	seedApiKeyHash         = "dev_demo_invoice_key"
+	seedApiKeyHash         = "0518d0227c5d73204727da9982619ee15adee82b46fc6e80096cf4f60fe71328"
 	seedWebhookKey         = "dev_webhook_key"
 	seedWalletAddress      = "rG3BgRh1xGaySMtvLoz35UZdTg15Htgi6j"
 	seedDateLayout         = "2006-01-02"
@@ -224,6 +224,7 @@ func (s *Server) SeedDevData() error {
 		// ── API Keys ─────────────────────────────────────────────────────────────
 		merchantAPIKey := models.MerchantAPIKey{
 			MerchantAPIKeyID:         seedMerchantAPIKeyID,
+			MerchantAPIKeyName:       "Seed Invoice Key",
 			MerchantAPIKeyHashed:     seedApiKeyHash,
 			MerchantAPIKeyMerchantID: seedMerchantID,
 		}
@@ -233,6 +234,7 @@ func (s *Server) SeedDevData() error {
 
 		merchantAPIKey2 := models.MerchantAPIKey{
 			MerchantAPIKeyID:         seedMerchantAPIKeyID2,
+			MerchantAPIKeyName:       "Seed Invoice Key",
 			MerchantAPIKeyHashed:     seedApiKeyHash,
 			MerchantAPIKeyMerchantID: seedMerchantID2,
 		}
@@ -538,6 +540,7 @@ func (s *Server) SeedProductionDemoMerchant() error {
 
 		merchantAPIKey := models.MerchantAPIKey{
 			MerchantAPIKeyID:         seedMerchantAPIKeyID,
+			MerchantAPIKeyName:       "Seed Invoice Key",
 			MerchantAPIKeyHashed:     seedApiKeyHash,
 			MerchantAPIKeyMerchantID: seedMerchantID,
 		}
