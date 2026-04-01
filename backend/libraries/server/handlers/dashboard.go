@@ -29,6 +29,7 @@ type DashboardInvoiceActivity struct {
 	Amount   int    `json:"amount"`
 	Status   string `json:"status"`
 	DateTime string `json:"dateTime"`
+	TxHash   string `json:"txHash"`
 }
 
 func queryDashboardGrossVolumeStats(db *gorm.DB, merchantID string, now time.Time) (DashboardGrossVolumeStats, error) {
@@ -82,14 +83,17 @@ func queryDashboardRecentActivity(db *gorm.DB, merchantID string, limit int) ([]
 		InvoiceAmountCharged decimal.Decimal `gorm:"column:invoice_amount_charged"`
 		InvoiceStatus        string          `gorm:"column:invoice_status"`
 		InvoiceDateTime      time.Time       `gorm:"column:invoice_date_time"`
+		TxHash               string          `gorm:"column:tx_hash"`
 	}
 
 	rows := []activityRow{}
 	err := db.Model(&models.Invoice{}).
 		Joins("JOIN merchant_customers ON merchant_customers.customer_id = invoice.invoice_customer_id").
-		Select("invoice_id, invoice_amount_charged, invoice_status, invoice_date_time").
+		// Restrict recent activity to invoices with a matched on-chain XRPL payment.
+		Joins("JOIN xrpl_payment ON xrpl_payment.invoice_id = invoice.invoice_id").
+		Select("invoice.invoice_id, invoice.invoice_amount_charged, invoice.invoice_status, invoice.invoice_date_time, xrpl_payment.tx_hash AS tx_hash").
 		Where("merchant_customers.customer_merchant_id = ?", merchantID).
-		Order("invoice_date_time DESC").
+		Order("invoice.invoice_date_time DESC").
 		Limit(limit).
 		Find(&rows).Error
 	if err != nil {
@@ -103,6 +107,7 @@ func queryDashboardRecentActivity(db *gorm.DB, merchantID string, limit int) ([]
 			Amount:   int(row.InvoiceAmountCharged.IntPart()),
 			Status:   mapInvoiceStatusForDashboard(row.InvoiceStatus),
 			DateTime: row.InvoiceDateTime.Local().Format("2006-01-02 03:04 PM"),
+			TxHash:   row.TxHash,
 		})
 	}
 

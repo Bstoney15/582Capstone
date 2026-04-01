@@ -2,6 +2,11 @@ import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useMerchant } from "../../contexts/MerchantContext";
 
+const xrplExplorerBaseUrl =
+    import.meta.env.VITE_XRPL_EXPLORER_BASE_URL || "https://testnet.xrpl.org";
+// Keep account links on the same XRPL network as the backend environment.
+const xrplAccountsExplorerBaseUrl = `${xrplExplorerBaseUrl.replace(/\/+$/, "")}/accounts/`;
+
 export default function Wallet() {
     const { requireRole, isLoading, selectedMerchant } = useMerchant();
     const [walletAddress, setWalletAddress] = useState("");
@@ -150,7 +155,7 @@ export default function Wallet() {
                         </button>
 
                         <a
-                            href={`https://livenet.xrpl.org/accounts/${encodeURIComponent(walletAddress)}`}
+                            href={`${xrplAccountsExplorerBaseUrl}${encodeURIComponent(walletAddress)}`}
                             target="_blank"
                             rel="noreferrer"
                         >

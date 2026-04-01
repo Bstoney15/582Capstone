@@ -1,6 +1,11 @@
 import { useMerchant } from "../../contexts/MerchantContext";
 import { useEffect, useState } from "react";
 
+const xrplExplorerBaseUrl =
+    import.meta.env.VITE_XRPL_EXPLORER_BASE_URL || "https://testnet.xrpl.org";
+// Keep explorer links on the same XRPL network as the backend environment.
+const xrplTransactionExplorerBaseUrl = `${xrplExplorerBaseUrl.replace(/\/+$/, "")}/transactions/`;
+
 export default function Dashboard() {
     const { selectedMerchant, isLoading } = useMerchant();
 
@@ -62,6 +67,23 @@ export default function Dashboard() {
               },
           ]
         : [];
+
+    const hasTransactionLinks = Boolean(
+        dashboardData?.recentActivity?.some((row) => row.txHash)
+    );
+    // Only render the Action column when there are real on-chain transactions.
+
+    const tableHeaderCellStyle = {
+        textAlign: "left",
+        padding: "0.65rem",
+        opacity: 0.7,
+        verticalAlign: "middle",
+    };
+
+    const tableBodyCellStyle = {
+        padding: "0.65rem",
+        verticalAlign: "middle",
+    };
 
     const getStatusStyles = (status) => {
         if (status === "Settled") {
@@ -166,28 +188,33 @@ export default function Dashboard() {
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                     <thead>
                         <tr>
-                            <th style={{ textAlign: "left", padding: "0.65rem", opacity: 0.7 }}>
+                            <th style={tableHeaderCellStyle}>
                                 Payment
                             </th>
-                            <th style={{ textAlign: "left", padding: "0.65rem", opacity: 0.7 }}>
+                            <th style={tableHeaderCellStyle}>
                                 Amount
                             </th>
-                            <th style={{ textAlign: "left", padding: "0.65rem", opacity: 0.7 }}>
+                            <th style={tableHeaderCellStyle}>
                                 Status
                             </th>
-                            <th style={{ textAlign: "left", padding: "0.65rem", opacity: 0.7 }}>
+                            <th style={tableHeaderCellStyle}>
                                 Date/Time
                             </th>
+                            {hasTransactionLinks && (
+                                <th style={tableHeaderCellStyle}>
+                                    Action
+                                </th>
+                            )}
                         </tr>
                     </thead>
                     <tbody>
                         {dashboardData?.recentActivity?.map((row) => (
                             <tr key={row.id}>
-                                <td style={{ padding: "0.65rem" }}>{row.id}</td>
-                                <td style={{ padding: "0.65rem" }}>
+                                <td style={tableBodyCellStyle}>{row.id}</td>
+                                <td style={tableBodyCellStyle}>
                                     {row.amount.toLocaleString()} XRP
                                 </td>
-                                <td style={{ padding: "0.65rem" }}>
+                                <td style={tableBodyCellStyle}>
                                     <span
                                         style={{
                                             ...getStatusStyles(row.status),
@@ -201,7 +228,33 @@ export default function Dashboard() {
                                         {row.status}
                                     </span>
                                 </td>
-                                <td style={{ padding: "0.65rem" }}>{row.dateTime}</td>
+                                <td style={tableBodyCellStyle}>{row.dateTime}</td>
+                                {hasTransactionLinks && (
+                                    <td style={{ ...tableBodyCellStyle, whiteSpace: "nowrap" }}>
+                                        {row.txHash && (
+                                            <a
+                                                href={`${xrplTransactionExplorerBaseUrl}${encodeURIComponent(row.txHash)}`}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                style={{
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    border: "1px solid rgba(128,128,128,0.35)",
+                                                    borderRadius: "8px",
+                                                    padding: "0.25rem 0.55rem",
+                                                    textDecoration: "none",
+                                                    color: "inherit",
+                                                    fontSize: "0.8rem",
+                                                    fontWeight: 600,
+                                                    lineHeight: 1.2,
+                                                }}
+                                            >
+                                                View on blockchain
+                                            </a>
+                                        )}
+                                    </td>
+                                )}
                             </tr>
                         ))}
                     </tbody>
