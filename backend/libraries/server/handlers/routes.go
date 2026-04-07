@@ -44,6 +44,7 @@ func (h *Handler) RegisterRoutes(s *http.ServeMux) {
 	s.HandleFunc("OPTIONS /api/verify", h.WidgetPreflightHandler)
 
 	s.HandleFunc("POST /api/user/login", h.LoginHandler)
+	s.HandleFunc("POST /api/user/logout", h.LogoutHandler)
 	s.HandleFunc("POST /api/user/signup", h.SignupHandler)
 	s.HandleFunc("GET /api/user/auth", h.CheckAuthHandler)
 	s.HandleFunc("GET /api/user/merchants", h.GetMerchantsHandler)

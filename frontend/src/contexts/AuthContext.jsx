@@ -16,6 +16,26 @@ export function AuthProvider({ children }) {
     const [isLoading, setIsLoading] = useState(true);
 
     /**
+     * Clears the session cookie on the client and moves the app to a logged-out state.
+     */
+    const logout = async () => {
+        try {
+            await fetch("/api/user/logout", {
+                method: "POST",
+                credentials: "include",
+            });
+        } catch (err) {
+            console.error("Logout request failed:", err);
+        }
+
+        // Fallback attempt for non-HttpOnly cases; HttpOnly removal is handled by backend.
+        document.cookie = "session_id=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        setIsAuthenticated(false);
+        window.history.replaceState(null, "", "/dashboard");
+        window.dispatchEvent(new PopStateEvent("popstate"));
+    };
+
+    /**
      * Redirects authenticated users away from public entry points (like login/signup)
      * to the dashboard.
      */
@@ -67,7 +87,7 @@ export function AuthProvider({ children }) {
     }, []);
 
     return (
-        <AuthContext.Provider value={{ isAuthenticated, setIsAuthenticated, isLoading, checkAuthStatus }}>
+        <AuthContext.Provider value={{ isAuthenticated, setIsAuthenticated, isLoading, checkAuthStatus, logout }}>
             {children}
         </AuthContext.Provider>
     );

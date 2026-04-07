@@ -112,6 +112,20 @@ func SetSessionCookie(w http.ResponseWriter, sessionToken string) {
 	})
 }
 
+// ClearSessionCookie expires the session cookie so the browser removes it.
+func ClearSessionCookie(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     SessionCookieName,
+		Value:    "",
+		HttpOnly: true,
+		Path:     "/",
+		// Secure:   true, // Uncomment when running on HTTPS
+		// SameSite: http.SameSiteStrictMode,
+		MaxAge:  -1,
+		Expires: time.Unix(0, 0),
+	})
+}
+
 // GetSessionToken retrieves the session token from the request cookies
 func GetSessionToken(r *http.Request) (string, error) {
 	cookie, err := r.Cookie(SessionCookieName)

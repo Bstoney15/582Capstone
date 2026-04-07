@@ -7,14 +7,12 @@
 // matching payment is found it is recorded as an XRPLPayment and the
 // corresponding open Invoice is marked as paid.
 
-
 package server
 
 import (
 	"backend/models"
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -32,7 +30,6 @@ const (
 	// defaultXRPLRPCURL points at the Ripple Testnet. Override with the
 	// XRPL_RPC_URL environment variable for Mainnet or a private node.
 	defaultXRPLRPCURL = "https://s.altnet.rippletest.net:51234"
-	// defaultReconcileInterval is how often the reconciler polls the ledger
 	// when no explicit interval is configured.
 	defaultReconcileInterval = 5 * time.Second
 
@@ -198,6 +195,11 @@ func (r *XRPLReconciler) reconcileWallet(merchantID string, address string) erro
 			if strings.Contains(rpcErr.Error(), "lgrIdxsInvalid") {
 				break
 			}
+			// actMalformed means the account string is invalid; skip this wallet so
+			// one bad row does not spam errors every reconciliation interval.
+			if strings.Contains(rpcErr.Error(), "actMalformed") {
+				break
+			}
 			return rpcErr
 		}
 
@@ -308,20 +310,22 @@ func (r *XRPLReconciler) recordAndMatchPayment(merchantID string, destination st
 
 	// Find the oldest open invoice for this merchant with the exact XRP amount.
 	var invoice models.Invoice
-	findErr := r.db.
+	findResult := r.db.
 		Joins("JOIN merchant_customers ON merchant_customers.customer_id = invoice.invoice_customer_id").
 		Where("merchant_customers.customer_merchant_id = ?", merchantID).
 		Where("invoice.invoice_status IN ?", []string{xrplPaymentStatusCreated, xrplPaymentStatusPending}).
 		Where("invoice.invoice_amount_charged = ?", amountXRP).
 		Order("invoice.invoice_id ASC").
-		First(&invoice).Error
+		Limit(1).
+		Find(&invoice)
 
-	if findErr != nil {
-		// No matching invoice is a normal outcome (e.g. spontaneous deposits).
-		if errors.Is(findErr, gorm.ErrRecordNotFound) {
-			return nil
-		}
-		return findErr
+	if findResult.Error != nil {
+		return findResult.Error
+	}
+
+	// No matching invoice is a normal outcome (e.g. spontaneous deposits).
+	if findResult.RowsAffected == 0 {
+		return nil
 	}
 
 	// Atomically mark the invoice as paid and link the payment to it.
@@ -403,13 +407,13 @@ func (r *XRPLReconciler) fetchAccountTx(address string, ledgerIndexMin int64, ma
 // so the reconciler scans from the beginning of history.
 func (r *XRPLReconciler) getCheckpoint(account string) (*models.XRPLCheckpoint, error) {
 	var checkpoint models.XRPLCheckpoint
-	err := r.db.Where("account = ?", account).First(&checkpoint).Error
-	if err == nil {
-		return &checkpoint, nil
+	result := r.db.Where("account = ?", account).Limit(1).Find(&checkpoint)
+	if result.Error != nil {
+		return nil, result.Error
 	}
 
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, err
+	if result.RowsAffected > 0 {
+		return &checkpoint, nil
 	}
 
 	checkpoint = models.XRPLCheckpoint{

@@ -1,0 +1,18 @@
+package routes
+
+import (
+	"backend/libraries/sessionManager"
+	"encoding/json"
+	"net/http"
+)
+
+// LogoutHandler clears the caller's session cookie and returns a success payload.
+func (h *Handler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	sessionManager.ClearSessionCookie(w)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "Logout successful",
+	})
+}

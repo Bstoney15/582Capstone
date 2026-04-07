@@ -16,7 +16,7 @@ import "./NavBar.css";
  * @returns {JSX.Element} The rendered NavBar.
  */
 export default function NavBar() {
-    const { checkAuthStatus } = useAuth();
+    const { logout } = useAuth();
     const { merchants, selectedMerchant, setSelectedMerchant, requireRole } = useMerchant();
     const { theme, toggleTheme } = useTheme();
     const navigate = useNavigate();
@@ -42,10 +42,10 @@ export default function NavBar() {
     }, []);
 
     /**
-     * Handles the logout process by navigating to the login page.
+     * Handles logout by clearing the client session state and redirecting.
      */
     const handleLogout = async () => {
-        navigate("/login");
+        await logout();
     };
 
     return (
@@ -134,7 +134,7 @@ export default function NavBar() {
                             <button
                                 className="custom-dropdown-item text-danger"
                                 role="menuitem"
-                                onClick={() => { setIsProfileOpen(false); handleLogout(); }}
+                                onClick={() => { setIsProfileOpen(false); void handleLogout(); }}
                             >
                                 Logout
                             </button>

@@ -50,6 +50,7 @@ const (
 	seedApiKeyHash         = "0518d0227c5d73204727da9982619ee15adee82b46fc6e80096cf4f60fe71328"
 	seedWebhookKey         = "dev_webhook_key"
 	seedWalletAddress      = "rG3BgRh1xGaySMtvLoz35UZdTg15Htgi6j"
+	seedWalletAddress2     = "rheTvEb34s4AFxJyqmbvzmTP1YbxDAeSDM"
 	seedDateLayout         = "2006-01-02"
 )
 
@@ -349,7 +350,7 @@ func (s *Server) SeedDevData() error {
 		merchantWallet2 := models.MerchantCryptoWallet{
 			MerchantCryptoWalletID:         seedMerchantWalletID2,
 			MerchantCryptoWalletMerchantID: seedMerchantID2,
-			MerchantCryptoWalletAddress:    seedWalletAddress,
+			MerchantCryptoWalletAddress:    seedWalletAddress2,
 			MerchantCryptoWalletVerified:   true,
 		}
 		if err := upsert(tx, &merchantWallet2); err != nil {
