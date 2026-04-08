@@ -3,7 +3,7 @@ import { useMerchant } from "../../contexts/MerchantContext";
 import "./Customers.css";
 
 export default function Customers() {
-    const { merchants, selectedMerchant, isLoading } = useMerchant();
+    const { selectedMerchant, isLoading } = useMerchant();
 
     const [customers, setCustomers] = useState([]);
     const [customersLoading, setCustomersLoading] = useState(false);
@@ -14,11 +14,13 @@ export default function Customers() {
         if (!selectedMerchant?.id) {
             setCustomers([]);
             setCustomersError(null);
+            setSearch("");
             return;
         }
         const fetchCustomers = async () => {
             setCustomersLoading(true);
             setCustomersError(null);
+            setSearch("");
             try {
                 const res = await fetch(
                     `/api/merchant/customers?merchant_id=${encodeURIComponent(selectedMerchant.id)}`
@@ -37,7 +39,7 @@ export default function Customers() {
     }, [selectedMerchant?.id]);
 
     if (isLoading) {
-        return <div className="users-loading">Loading...</div>;
+        return <div className="customers-page">Loading...</div>;
     }
 
     const filtered = customers.filter((c) =>
@@ -48,60 +50,64 @@ export default function Customers() {
     );
 
     return (
-        <div style={{ padding: "2rem", maxWidth: 900, margin: "0 auto" }}>
-            <h1 style={{ marginBottom: "1.5rem" }}>Customers</h1>
+        <div className="customers-page">
+            <h1>Customers</h1>
 
-            {merchants.length === 0 ? (
-                <p>You don't have any merchants yet.</p>
-            ) : !selectedMerchant ? (
-                <p>No merchant selected.</p>
+            {selectedMerchant ? (
+                <p className="customers-description">
+                    Customers associated with {selectedMerchant.name}.
+                </p>
             ) : (
-                <section>
-                    <div className="users-toolbar">
-                        <input
-                            type="text"
-                            className="customers-search-input"
-                            placeholder="Search by name or email…"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                        />
-                    </div>
-                    <div className="users-info-box">
-                        <h2>
-                            Customers for {selectedMerchant.name}
-                        </h2>
-                        {customersLoading && <p>Loading customers...</p>}
-                        {customersError && (
-                            <p className="error-message">{customersError}</p>
-                        )}
-                        {!customersLoading && !customersError && (
-                            <>
-                                {filtered.length === 0 ? (
-                                    <p>{customers.length === 0 ? "No customers for this merchant." : "No customers match your search."}</p>
-                                ) : (
-                                    <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                                        <thead>
-                                            <tr className="users-table">
-                                                <th>First Name</th>
-                                                <th>Last Name</th>
-                                                <th>Email</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {filtered.map((c) => (
-                                                <tr key={c.customer_id}>
-                                                    <td>{c.first_name}</td>
-                                                    <td>{c.last_name}</td>
-                                                    <td>{c.email}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                )}
-                            </>
-                        )}
-                    </div>
-                </section>
+                <p className="customers-description">
+                    Select a merchant account to view customers.
+                </p>
+            )}
+
+            {customersError && (
+                <p className="customers-error">{customersError}</p>
+            )}
+
+            {selectedMerchant && (
+                <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search by name or email…"
+                    className="customers-search-input"
+                />
+            )}
+
+            {selectedMerchant && customersLoading && <p>Loading customers…</p>}
+
+            {selectedMerchant && !customersLoading && filtered.length === 0 && (
+                <p className="customers-empty">
+                    {customers.length === 0
+                        ? "No customers for this merchant."
+                        : "No customers match your search."}
+                </p>
+            )}
+
+            {selectedMerchant && !customersLoading && filtered.length > 0 && (
+                <div className="customers-table-container">
+                    <table className="customers-table">
+                        <thead>
+                            <tr>
+                                <th>First Name</th>
+                                <th>Last Name</th>
+                                <th>Email</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filtered.map((c) => (
+                                <tr key={c.customer_id}>
+                                    <td>{c.first_name}</td>
+                                    <td>{c.last_name}</td>
+                                    <td>{c.email}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             )}
         </div>
     );
