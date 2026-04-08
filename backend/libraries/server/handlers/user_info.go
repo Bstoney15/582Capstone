@@ -1,3 +1,6 @@
+// Author: Ryan Grimsley
+// Date Created: 02/23/26
+// Description: File containing handler to get user info, this runs when the route GET /api/user/info is hit
 package routes
 
 import (

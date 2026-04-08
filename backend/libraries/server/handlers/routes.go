@@ -1,3 +1,6 @@
+// Authors: Bem Stonestreet, Ryan Grimsley, Joe Hotze, Charley Findling
+// Date Created: 02/02/26
+// Description: file containing all routes for api backend
 package routes
 
 // Author: Benjamin Stonestreet
