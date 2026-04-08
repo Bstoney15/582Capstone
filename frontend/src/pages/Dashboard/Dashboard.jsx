@@ -7,6 +7,7 @@ export default function Dashboard() {
     const [dashboardData, setDashboardData] = useState(null);
     const [dashboardLoading, setDashboardLoading] = useState(false);
     const [dashboardError, setDashboardError] = useState("");
+    const [statusFilter, setStatusFilter] = useState("all");
 
     useEffect(() => {
         if (!selectedMerchant?.id) {
@@ -84,6 +85,12 @@ export default function Dashboard() {
             border: "1px solid rgba(248,113,113,0.35)",
         };
     };
+
+    const filteredActivity = dashboardData?.recentActivity?.filter((row) => {
+        if (statusFilter === "all") return true;
+        if (statusFilter === "completed") return row.status === "Settled";
+        return true;
+    });
 
     if (isLoading) {
         return <div style={{ padding: "2rem" }}>Loading dashboard...</div>;
@@ -163,6 +170,37 @@ export default function Dashboard() {
                     Recent activity
                 </h2>
 
+                <div style={{ marginBottom: "1rem", display: "flex", gap: "0.5rem" }}>
+                    <button
+                        onClick={() => setStatusFilter("all")}
+                        style={{
+                            padding: "0.5rem 1rem",
+                            borderRadius: "6px",
+                            border: "1px solid rgba(128,128,128,0.25)",
+                            background: statusFilter === "all" ? "var(--color-accent)" : "transparent",
+                            color: statusFilter === "all" ? "white" : "inherit",
+                            cursor: "pointer",
+                            fontWeight: statusFilter === "all" ? 600 : 400,
+                        }}
+                    >
+                        All Transactions
+                    </button>
+                    <button
+                        onClick={() => setStatusFilter("completed")}
+                        style={{
+                            padding: "0.5rem 1rem",
+                            borderRadius: "6px",
+                            border: "1px solid rgba(128,128,128,0.25)",
+                            background: statusFilter === "completed" ? "var(--color-accent)" : "transparent",
+                            color: statusFilter === "completed" ? "white" : "inherit",
+                            cursor: "pointer",
+                            fontWeight: statusFilter === "completed" ? 600 : 400,
+                        }}
+                    >
+                        Completed
+                    </button>
+                </div>
+
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                     <thead>
                         <tr>
@@ -181,7 +219,7 @@ export default function Dashboard() {
                         </tr>
                     </thead>
                     <tbody>
-                        {dashboardData?.recentActivity?.map((row) => (
+                        {filteredActivity?.map((row) => (
                             <tr key={row.id}>
                                 <td style={{ padding: "0.65rem" }}>{row.id}</td>
                                 <td style={{ padding: "0.65rem" }}>

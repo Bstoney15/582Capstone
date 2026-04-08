@@ -162,8 +162,8 @@ func (h *Handler) GetDashboardHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to fetch dashboard stats", http.StatusInternalServerError)
 		return
 	}
-
-	recentActivity, err := queryDashboardRecentActivity(h.DB, merchantID, 5)
+	var recentActivityLimit int = 20
+	recentActivity, err := queryDashboardRecentActivity(h.DB, merchantID, recentActivityLimit)
 	if err != nil {
 		http.Error(w, "failed to fetch dashboard activity", http.StatusInternalServerError)
 		return
