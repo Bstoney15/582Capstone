@@ -1,0 +1,15 @@
+.customers-search-input {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.9375rem;
+  background: var(--color-base);
+  color: inherit;
+  width: 280px;
+  max-width: 100%;
+}
+
+.customers-search-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
