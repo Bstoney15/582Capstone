@@ -1,3 +1,6 @@
+// Authors: Ben Stonestreet, Joe Hotze, Ryan Grimsley
+// Created: 03/4/26
+// Description: backend file containing handler functions for the merchant dashboard
 package routes
 
 import (
@@ -109,6 +112,39 @@ func queryDashboardRecentActivity(db *gorm.DB, merchantID string, limit int) ([]
 	return activities, nil
 }
 
+func queryDashboardSearchInvoices(db *gorm.DB, merchantID string, invoiceIDSearch string) ([]DashboardInvoiceActivity, error) {
+	type activityRow struct {
+		InvoiceID            string          `gorm:"column:invoice_id"`
+		InvoiceAmountCharged decimal.Decimal `gorm:"column:invoice_amount_charged"`
+		InvoiceStatus        string          `gorm:"column:invoice_status"`
+		InvoiceDateTime      time.Time       `gorm:"column:invoice_date_time"`
+	}
+
+	rows := []activityRow{}
+	err := db.Model(&models.Invoice{}).
+		Joins("JOIN merchant_customers ON merchant_customers.customer_id = invoice.invoice_customer_id").
+		Select("invoice_id, invoice_amount_charged, invoice_status, invoice_date_time").
+		Where("merchant_customers.customer_merchant_id = ?", merchantID).
+		Where("invoice_id LIKE ?", "%"+invoiceIDSearch+"%").
+		Order("invoice_date_time DESC").
+		Find(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+
+	activities := make([]DashboardInvoiceActivity, 0, len(rows))
+	for _, row := range rows {
+		activities = append(activities, DashboardInvoiceActivity{
+			ID:       row.InvoiceID,
+			Amount:   int(row.InvoiceAmountCharged.IntPart()),
+			Status:   mapInvoiceStatusForDashboard(row.InvoiceStatus),
+			DateTime: row.InvoiceDateTime.Local().Format("2006-01-02 03:04 PM"),
+		})
+	}
+
+	return activities, nil
+}
+
 func mapInvoiceStatusForDashboard(status string) string {
 	switch status {
 	case "paid":
@@ -176,4 +212,55 @@ func (h *Handler) GetDashboardHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+func (h *Handler) SearchInvoiceHandler(w http.ResponseWriter, r *http.Request) {
+	sessionToken, err := sessionManager.GetSessionToken(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	sessionData, _, active := sessionManager.CheckSession(sessionToken)
+	if !active {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	merchantID := strings.TrimSpace(r.URL.Query().Get("merchant_id"))
+	if merchantID == "" {
+		http.Error(w, "merchant_id is required", http.StatusBadRequest)
+		return
+	}
+
+	invoiceIDSearch := strings.TrimSpace(r.URL.Query().Get("invoice_id"))
+	if invoiceIDSearch == "" {
+		http.Error(w, "invoice_id search term is required", http.StatusBadRequest)
+		return
+	}
+
+	var role models.Role
+	if err := h.DB.Where(
+		"role_user_id = ? AND role_merchant_id = ? AND role_name IN ?",
+		sessionData.UserID,
+		merchantID,
+		[]string{models.RoleDeveloper, models.RoleAdmin, models.RoleOwner},
+	).First(&role).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+
+		http.Error(w, "failed to verify merchant access", http.StatusInternalServerError)
+		return
+	}
+
+	searchResults, err := queryDashboardSearchInvoices(h.DB, merchantID, invoiceIDSearch)
+	if err != nil {
+		http.Error(w, "failed to search invoices", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(searchResults)
 }
