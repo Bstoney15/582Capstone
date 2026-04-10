@@ -61,6 +61,7 @@ export default function NavBar() {
                                 <Link to="/users" className="navbar-link">Users</Link>
                             </>
                         )}
+                        <Link to="/customers" className="navbar-link">Customers</Link>
                         <Link to="/webhooks" className="navbar-link">Webhooks</Link>
                         <Link to="/api-keys" className="navbar-link">API Keys</Link>
                     </>

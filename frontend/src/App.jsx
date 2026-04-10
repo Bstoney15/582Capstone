@@ -14,6 +14,7 @@ import ApiKeys from "./pages/ApiKeys/ApiKeys.jsx";
 import CreateMerchant from "./pages/CreateMerchant/CreateMerchant.jsx";
 import Wallet from "./pages/Wallet/Wallet.jsx";
 import Users from "./pages/Users/Users.jsx";
+import Customers from "./pages/Customers/Customers.jsx";
 import "./App.css";
 
 const router = createBrowserRouter([
@@ -70,6 +71,10 @@ const router = createBrowserRouter([
           {
             path: "/users",
             element: <Users />
+          },
+          {
+            path: "/customers",
+            element: <Customers />
           },
           {
             path: "/create-merchant",
