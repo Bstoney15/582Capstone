@@ -1,3 +1,7 @@
+// Authors: Ryan Grimsley, Ben Stonestreet
+// Date Created: 02/20/26
+// Description: File containing handler functions for all api routes related to merchants
+
 package routes
 
 import (
