@@ -54,6 +54,7 @@ func (h *Handler) RegisterRoutes(s *http.ServeMux) {
 	// Developer and above Routes
 
 	s.HandleFunc("GET /api/dashboard", h.GetDashboardHandler)
+	s.HandleFunc("GET /api/dashboard/search", h.SearchInvoiceHandler)
 	s.HandleFunc("GET /api/merchant/customers", h.GetMerchantCustomersHandler)
 
 	// Admin Only Routes

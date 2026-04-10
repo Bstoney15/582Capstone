@@ -1,3 +1,6 @@
+// Authors: Ben Stonestreet, Joe Hotze, Ryan Grimsley
+// Created: 02/20/26
+// Description: JSX file for the merchant dashboard, displays recent transactions, volume stats
 import { useMerchant } from "../../contexts/MerchantContext";
 import { useEffect, useState } from "react";
 
@@ -7,6 +10,15 @@ export default function Dashboard() {
     const [dashboardData, setDashboardData] = useState(null);
     const [dashboardLoading, setDashboardLoading] = useState(false);
     const [dashboardError, setDashboardError] = useState("");
+    const [statusFilter, setStatusFilter] = useState("all");
+    
+    // Search state
+    const [searchTerm, setSearchTerm] = useState("");
+    const [searchResults, setSearchResults] = useState(null);
+    const [searchLoading, setSearchLoading] = useState(false);
+    const [searchError, setSearchError] = useState("");
+    const [isSearching, setIsSearching] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
 
     useEffect(() => {
         if (!selectedMerchant?.id) {
@@ -45,6 +57,53 @@ export default function Dashboard() {
 
         fetchDashboard();
     }, [selectedMerchant?.id]);
+
+    const handleSearch = async (e) => {
+        e.preventDefault();
+        
+        const trimmedSearchTerm = searchTerm.trim();
+        if (!trimmedSearchTerm) {
+            setSearchError("Please enter an invoice ID to search");
+            return;
+        }
+
+        try {
+            setSearchLoading(true);
+            setSearchError("");
+            setCurrentPage(1);
+
+            const merchantID = encodeURIComponent(selectedMerchant.id);
+            const searchQuery = encodeURIComponent(trimmedSearchTerm);
+            const res = await fetch(
+                `/api/dashboard/search?merchant_id=${merchantID}&invoice_id=${searchQuery}`
+            );
+
+            if (!res.ok) {
+                if (res.status === 403) {
+                    throw new Error("You do not have access to this merchant.");
+                }
+                throw new Error("Failed to search invoices");
+            }
+
+            const data = await res.json();
+            setSearchResults(data || []);
+            setIsSearching(true);
+        } catch (err) {
+            console.error("Search error:", err);
+            setSearchError(err instanceof Error ? err.message : "Failed to search invoices.");
+            setSearchResults([]);
+        } finally {
+            setSearchLoading(false);
+        }
+    };
+
+    const handleClearSearch = () => {
+        setSearchTerm("");
+        setSearchResults(null);
+        setSearchError("");
+        setIsSearching(false);
+        setCurrentPage(1);
+    };
 
     const stats = dashboardData
         ? [
@@ -85,6 +144,27 @@ export default function Dashboard() {
         };
     };
 
+    const filteredActivity = dashboardData?.recentActivity?.filter((row) => {
+        if (statusFilter === "all") return true;
+        if (statusFilter === "completed") return row.status === "Settled";
+        return true;
+    });
+
+    const activityToDisplay = isSearching ? searchResults : dashboardData?.recentActivity;
+    
+    const filteredActivityForDisplay = activityToDisplay?.filter((row) => {
+        if (statusFilter === "all") return true;
+        if (statusFilter === "completed") return row.status === "Settled";
+        return true;
+    }) || [];
+
+    const itemsPerPage = 20;
+    const totalPages = Math.ceil(filteredActivityForDisplay.length / itemsPerPage);
+    const paginatedActivity = filteredActivityForDisplay.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
     if (isLoading) {
         return <div style={{ padding: "2rem" }}>Loading dashboard...</div>;
     }
@@ -109,7 +189,8 @@ export default function Dashboard() {
             <div style={{ marginBottom: "1.25rem" }}>
                 <h1 style={{ margin: 0 }}>Dashboard</h1>
                 <p style={{ margin: "0.4rem 0 0", opacity: 0.75 }}>
-                    {selectedMerchant.name} performance overview
+                    {selectedMerchant.name} performance overview <br/>
+                    (Gross stats include pending transactions)
                 </p>
             </div>
 
@@ -163,11 +244,111 @@ export default function Dashboard() {
                     Recent activity
                 </h2>
 
+                <div style={{ marginBottom: "1rem", display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
+                    <button
+                        onClick={() => {
+                            setStatusFilter("all");
+                            setCurrentPage(1);
+                        }}
+                        style={{
+                            padding: "0.5rem 1rem",
+                            borderRadius: "6px",
+                            border: "1px solid rgba(128,128,128,0.25)",
+                            background: statusFilter === "all" ? "var(--color-accent)" : "transparent",
+                            color: statusFilter === "all" ? "white" : "inherit",
+                            cursor: "pointer",
+                            fontWeight: statusFilter === "all" ? 600 : 400,
+                        }}
+                    >
+                        {isSearching ? "All Transactions" : "All Recent Transactions"}
+                    </button>
+                    <button
+                        onClick={() => {
+                            setStatusFilter("completed");
+                            setCurrentPage(1);
+                        }}
+                        style={{
+                            padding: "0.5rem 1rem",
+                            borderRadius: "6px",
+                            border: "1px solid rgba(128,128,128,0.25)",
+                            background: statusFilter === "completed" ? "var(--color-accent)" : "transparent",
+                            color: statusFilter === "completed" ? "white" : "inherit",
+                            cursor: "pointer",
+                            fontWeight: statusFilter === "completed" ? 600 : 400,
+                        }}
+                    >
+                        Completed
+                    </button>
+
+                    {isSearching && (
+                        <button
+                            onClick={handleClearSearch}
+                            style={{
+                                padding: "0.5rem 1rem",
+                                borderRadius: "6px",
+                                border: "1px solid rgba(248,113,113,0.35)",
+                                background: "rgba(248,113,113,0.15)",
+                                color: "#991b1b",
+                                cursor: "pointer",
+                                fontWeight: 600,
+                                marginLeft: "auto",
+                            }}
+                        >
+                            Clear Search
+                        </button>
+                    )}
+                </div>
+
+                
+                
+                    <form
+                        onSubmit={handleSearch}
+                        style={{ marginBottom: "1rem", display: "flex", gap: "0.5rem" }}
+                    >
+                        <input
+                            type="text"
+                            placeholder="Search transactions by Invoice ID..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            style={{
+                                flex: 1,
+                                padding: "0.5rem 0.75rem",
+                                borderRadius: "6px",
+                                border: "1px solid rgba(128,128,128,0.25)",
+                                background: "var(--color-base)",
+                                color: "inherit",
+                                fontSize: "0.95rem",
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                    handleSearch(e);
+                                }
+                            }}
+                        />
+                        <button
+                            type="submit"
+                            disabled={searchLoading}
+                            style={{
+                                padding: "0.5rem 1rem",
+                                borderRadius: "6px",
+                                border: "1px solid rgba(128,128,128,0.25)",
+                                background: "var(--color-accent)",
+                                color: "white",
+                                cursor: searchLoading ? "not-allowed" : "pointer",
+                                fontWeight: 600,
+                                opacity: searchLoading ? 0.7 : 1,
+                            }}
+                        >
+                            {searchLoading ? "Searching..." : "Search"}
+                        </button>
+                    </form>
+                
+
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                     <thead>
                         <tr>
                             <th style={{ textAlign: "left", padding: "0.65rem", opacity: 0.7 }}>
-                                Payment
+                                Invoice ID
                             </th>
                             <th style={{ textAlign: "left", padding: "0.65rem", opacity: 0.7 }}>
                                 Amount
@@ -181,7 +362,7 @@ export default function Dashboard() {
                         </tr>
                     </thead>
                     <tbody>
-                        {dashboardData?.recentActivity?.map((row) => (
+                        {paginatedActivity?.map((row) => (
                             <tr key={row.id}>
                                 <td style={{ padding: "0.65rem" }}>{row.id}</td>
                                 <td style={{ padding: "0.65rem" }}>
@@ -206,6 +387,57 @@ export default function Dashboard() {
                         ))}
                     </tbody>
                 </table>
+
+                {/* Pagination and error/empty state */}
+                {searchError && (
+                    <div style={{ marginTop: "1rem", color: "#991b1b", fontSize: "0.95rem" }}>
+                        {searchError}
+                    </div>
+                )}
+
+                {isSearching && filteredActivityForDisplay.length === 0 && !searchError && (
+                    <div style={{ marginTop: "1rem", opacity: 0.7, fontSize: "0.95rem" }}>
+                        No invoices found matching "{searchTerm}"
+                    </div>
+                )}
+
+                {filteredActivityForDisplay.length > itemsPerPage && (
+                    <div style={{ marginTop: "1.5rem", display: "flex", gap: "1rem", alignItems: "center", justifyContent: "center" }}>
+                        <button
+                            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                            disabled={currentPage === 1}
+                            style={{
+                                padding: "0.5rem 1rem",
+                                borderRadius: "6px",
+                                border: "1px solid rgba(128,128,128,0.25)",
+                                background: currentPage === 1 ? "rgba(128,128,128,0.1)" : "var(--color-accent)",
+                                color: currentPage === 1 ? "rgba(128,128,128,0.5)" : "white",
+                                cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                                fontWeight: 600,
+                            }}
+                        >
+                            Previous
+                        </button>
+                        <span style={{ opacity: 0.75, fontSize: "0.95rem" }}>
+                            Page {currentPage} of {totalPages}
+                        </span>
+                        <button
+                            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                            disabled={currentPage === totalPages}
+                            style={{
+                                padding: "0.5rem 1rem",
+                                borderRadius: "6px",
+                                border: "1px solid rgba(128,128,128,0.25)",
+                                background: currentPage === totalPages ? "rgba(128,128,128,0.1)" : "var(--color-accent)",
+                                color: currentPage === totalPages ? "rgba(128,128,128,0.5)" : "white",
+                                cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+                                fontWeight: 600,
+                            }}
+                        >
+                            Next
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );
