@@ -11,6 +11,7 @@ type MerchantAPIKey struct {
 	MerchantAPIKeyID         string    `gorm:"primaryKey;type:varchar(36)" json:"merchant_api_key_id"`
 	MerchantAPIKeyName       string    `gorm:"not null;default:''" json:"merchant_api_key_name"`
 	MerchantAPIKeyHashed     string    `gorm:"not null;default:''" json:"merchant_api_key_hashed"`
+	MerchantAPIKeyRevoked    bool      `gorm:"not null;default:false" json:"merchant_api_key_revoked"`
 	MerchantAPIKeyMerchantID string    `gorm:"not null;default:'';type:varchar(36)" json:"merchant_api_key_merchant_id"`
 	MerchantAPIKeyCreatedAt  time.Time `gorm:"autoCreateTime" json:"merchant_api_key_created_at"`
 	Merchant                 Merchant  `gorm:"foreignKey:MerchantAPIKeyMerchantID;references:MerchantID" json:"merchant,omitempty"`

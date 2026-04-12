@@ -7,6 +7,7 @@ package routes
 // Created: 2026-02-02
 
 import (
+	"backend/libraries/apiauth"
 	"net/http"
 
 	"gorm.io/gorm"
@@ -37,7 +38,7 @@ func (h *Handler) RegisterRoutes(s *http.ServeMux) {
 
 	// No Auth Routes
 	s.HandleFunc("GET /api/health", h.HealthCheckHandler)
-	s.HandleFunc("POST /api/invoices", h.CreateInvoiceHandler)
+	s.Handle("POST /api/invoices", apiauth.RequireMerchantAPIKey(h.DB, http.HandlerFunc(h.CreateInvoiceHandler)))
 	s.HandleFunc("GET /api/invoices/{uuid}", h.GetInvoiceForCheckoutHandler)
 	s.HandleFunc("GET /api/invoices/{uuid}/events", h.StreamInvoiceEventsHandler)
 	s.HandleFunc("POST /api/verify", h.VerifyInvoicePaymentHandler)
@@ -73,4 +74,16 @@ func (h *Handler) RegisterRoutes(s *http.ServeMux) {
 	s.HandleFunc("GET /api/merchant/api_key", h.GetMerchantAPIKeysHandler)
 	s.HandleFunc("POST /api/merchant/api_key", h.CreateMerchantAPIKeyHandler)
 	s.HandleFunc("DELETE /api/merchant/api_key/{api_key}", h.DeleteMerchantAPIKeyHandler)
+
+	// Merchant-scoped CRUD routes authenticated by merchant API key
+	s.Handle("POST /api/merchant/customers", apiauth.RequireMerchantAPIKey(h.DB, http.HandlerFunc(h.CreateMerchantCustomerHandler)))
+	s.Handle("GET /api/merchant/customers", apiauth.RequireMerchantAPIKey(h.DB, http.HandlerFunc(h.ListMerchantCustomersHandler)))
+	s.Handle("GET /api/merchant/customers/{customer_id}", apiauth.RequireMerchantAPIKey(h.DB, http.HandlerFunc(h.GetMerchantCustomerHandler)))
+	s.Handle("PATCH /api/merchant/customers/{customer_id}", apiauth.RequireMerchantAPIKey(h.DB, http.HandlerFunc(h.UpdateMerchantCustomerHandler)))
+	s.Handle("DELETE /api/merchant/customers/{customer_id}", apiauth.RequireMerchantAPIKey(h.DB, http.HandlerFunc(h.DeleteMerchantCustomerHandler)))
+
+	s.Handle("POST /api/merchant/invoices", apiauth.RequireMerchantAPIKey(h.DB, http.HandlerFunc(h.CreateMerchantInvoiceHandler)))
+	s.Handle("GET /api/merchant/invoices", apiauth.RequireMerchantAPIKey(h.DB, http.HandlerFunc(h.ListMerchantInvoicesHandler)))
+	s.Handle("GET /api/merchant/invoices/{invoice_id}", apiauth.RequireMerchantAPIKey(h.DB, http.HandlerFunc(h.GetMerchantInvoiceHandler)))
+	s.Handle("DELETE /api/merchant/invoices/{invoice_id}", apiauth.RequireMerchantAPIKey(h.DB, http.HandlerFunc(h.DeleteMerchantInvoiceHandler)))
 }

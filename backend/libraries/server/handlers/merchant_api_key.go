@@ -80,7 +80,7 @@ func (h *Handler) GetMerchantAPIKeysHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	var keys []models.MerchantAPIKey
-	if err := h.DB.Where("merchant_api_key_merchant_id = ?", merchantID).Order("merchant_api_key_created_at DESC").Find(&keys).Error; err != nil {
+	if err := h.DB.Where("merchant_api_key_merchant_id = ? AND merchant_api_key_revoked = ?", merchantID, false).Order("merchant_api_key_created_at DESC").Find(&keys).Error; err != nil {
 		http.Error(w, "Failed to fetch API keys", http.StatusInternalServerError)
 		return
 	}
@@ -128,6 +128,7 @@ func (h *Handler) CreateMerchantAPIKeyHandler(w http.ResponseWriter, r *http.Req
 		MerchantAPIKeyID:         uuid.New().String(),
 		MerchantAPIKeyName:       requestBody.Name,
 		MerchantAPIKeyHashed:     hashAPIKey(plainAPIKey),
+		MerchantAPIKeyRevoked:    false,
 		MerchantAPIKeyMerchantID: requestBody.MerchantID,
 	}
 
@@ -164,7 +165,7 @@ func (h *Handler) DeleteMerchantAPIKeyHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	var existing models.MerchantAPIKey
-	if err := h.DB.Where("merchant_api_key_id = ? AND merchant_api_key_merchant_id = ?", apiKeyID, merchantID).First(&existing).Error; err != nil {
+	if err := h.DB.Where("merchant_api_key_id = ? AND merchant_api_key_merchant_id = ? AND merchant_api_key_revoked = ?", apiKeyID, merchantID, false).First(&existing).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			http.Error(w, "API key not found", http.StatusNotFound)
 			return
@@ -173,7 +174,7 @@ func (h *Handler) DeleteMerchantAPIKeyHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	if err := h.DB.Delete(&existing).Error; err != nil {
+	if err := h.DB.Model(&existing).Update("merchant_api_key_revoked", true).Error; err != nil {
 		http.Error(w, "Failed to delete API key", http.StatusInternalServerError)
 		return
 	}

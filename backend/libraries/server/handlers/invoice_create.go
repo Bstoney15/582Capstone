@@ -4,6 +4,7 @@ package routes
 // Created: 2026-03-08
 
 import (
+	"backend/libraries/apiauth"
 	"backend/models"
 	"encoding/json"
 	"errors"
@@ -25,9 +26,8 @@ const (
 
 // CreateInvoiceRequest is the payload expected for creating a new invoice.
 type CreateInvoiceRequest struct {
-	MerchantAPIKey string `json:"merchant_api_key"`
-	AmountXRP      any    `json:"amount_xrp,omitempty"`
-	AmountUSD      any    `json:"amount_usd,omitempty"`
+	AmountXRP any `json:"amount_xrp,omitempty"`
+	AmountUSD any `json:"amount_usd,omitempty"`
 }
 
 // CreateInvoiceResponse is the response returned after a successful invoice creation.
@@ -123,26 +123,8 @@ func (h *Handler) CreateInvoiceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	merchantAPIKey := strings.TrimSpace(request.MerchantAPIKey)
-	if merchantAPIKey == "" {
-		http.Error(w, "invalid merchant api key", http.StatusUnauthorized)
-		return
-	}
-
-	merchantAPIKeyHash := hashAPIKey(merchantAPIKey)
-
-	var apiKey models.MerchantAPIKey
-	if err := h.DB.Where("merchant_api_key_hashed IN ?", []string{merchantAPIKeyHash, merchantAPIKey}).First(&apiKey).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			http.Error(w, "invalid merchant api key", http.StatusUnauthorized)
-			return
-		}
-
-		http.Error(w, "failed to validate merchant api key", http.StatusInternalServerError)
-		return
-	}
-
-	if strings.TrimSpace(apiKey.MerchantAPIKeyMerchantID) == "" {
+	merchantID, ok := apiauth.MerchantIDFromContext(r.Context())
+	if !ok {
 		http.Error(w, "invalid merchant api key", http.StatusUnauthorized)
 		return
 	}
@@ -190,7 +172,7 @@ func (h *Handler) CreateInvoiceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var customer models.Customer
-	if err := h.DB.Where("customer_merchant_id = ?", apiKey.MerchantAPIKeyMerchantID).Order("customer_id ASC").First(&customer).Error; err != nil {
+	if err := h.DB.Where("customer_merchant_id = ?", merchantID).Order("customer_id ASC").First(&customer).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			http.Error(w, "no customer exists for this merchant", http.StatusNotFound)
 			return

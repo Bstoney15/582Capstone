@@ -92,6 +92,7 @@ func queryDashboardRecentActivity(db *gorm.DB, merchantID string, limit int) ([]
 		Joins("JOIN merchant_customers ON merchant_customers.customer_id = invoice.invoice_customer_id").
 		Select("invoice_id, invoice_amount_charged, invoice_status, invoice_date_time").
 		Where("merchant_customers.customer_merchant_id = ?", merchantID).
+		Where("invoice_status = ?", "paid").
 		Order("invoice_date_time DESC").
 		Limit(limit).
 		Find(&rows).Error

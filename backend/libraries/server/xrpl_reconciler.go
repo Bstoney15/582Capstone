@@ -10,8 +10,10 @@
 package server
 
 import (
+	"backend/libraries/webhooks"
 	"backend/models"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -99,6 +101,7 @@ type xrplTx struct {
 type XRPLReconciler struct {
 	db         *gorm.DB
 	httpClient *http.Client
+	webhooks   *webhooks.Dispatcher
 	rpcURL     string
 	interval   time.Duration
 	// isReconciling prevents concurrent reconciliation runs if a single poll
@@ -125,6 +128,7 @@ func NewXRPLReconciler(db *gorm.DB) *XRPLReconciler {
 	return &XRPLReconciler{
 		db:         db,
 		httpClient: &http.Client{Timeout: 20 * time.Second},
+		webhooks:   webhooks.NewDispatcher(webhooks.DispatcherConfig{}),
 		rpcURL:     rpcURL,
 		interval:   interval,
 	}
@@ -329,7 +333,7 @@ func (r *XRPLReconciler) recordAndMatchPayment(merchantID string, destination st
 	}
 
 	// Atomically mark the invoice as paid and link the payment to it.
-	return r.db.Transaction(func(tx *gorm.DB) error {
+	err = r.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Model(&models.Invoice{}).
 			Where("invoice_id = ?", invoice.InvoiceID).
 			Where("invoice_status IN ?", []string{xrplPaymentStatusCreated, xrplPaymentStatusPending}).
@@ -341,6 +345,42 @@ func (r *XRPLReconciler) recordAndMatchPayment(merchantID string, destination st
 			Where("tx_hash = ?", txHash).
 			Update("invoice_id", invoice.InvoiceID).Error
 	})
+	if err != nil {
+		return err
+	}
+
+	r.dispatchInvoicePaidWebhook(merchantID, invoice, payment)
+	return nil
+}
+
+func (r *XRPLReconciler) dispatchInvoicePaidWebhook(merchantID string, invoice models.Invoice, payment models.XRPLPayment) {
+	var config models.MerchantWebhookKey
+	err := r.db.Where("merchant_webhook_key_merchant_id = ?", merchantID).Limit(1).Find(&config).Error
+	if err != nil {
+		log.Printf("xrpl reconciler: failed to load webhook config for merchant %s: %v", merchantID, err)
+		return
+	}
+
+	if strings.TrimSpace(config.MerchantWebhookURL) == "" || strings.TrimSpace(config.MerchantWebhookKey) == "" {
+		return
+	}
+
+	payload := map[string]interface{}{
+		"merchant_id":    merchantID,
+		"invoice_id":     invoice.InvoiceID,
+		"invoice_status": xrplPaymentStatusPaid,
+		"amount_xrp":     invoice.InvoiceAmountCharged.StringFixed(4),
+		"tx_hash":        payment.TxHash,
+		"ledger_index":   payment.LedgerIndex,
+		"processed_at":   payment.ProcessedAt,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+	defer cancel()
+
+	if _, dispatchErr := r.webhooks.Dispatch(ctx, config.MerchantWebhookURL, config.MerchantWebhookKey, "invoice.paid", payload); dispatchErr != nil {
+		log.Printf("xrpl reconciler: webhook dispatch failed for merchant %s invoice %s: %v", merchantID, invoice.InvoiceID, dispatchErr)
+	}
 }
 
 // fetchAccountTx calls the XRPL account_tx RPC method and returns the parsed
