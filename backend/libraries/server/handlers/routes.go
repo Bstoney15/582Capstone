@@ -59,7 +59,8 @@ func (h *Handler) RegisterRoutes(s *http.ServeMux) {
 
 	s.HandleFunc("GET /api/dashboard", h.GetDashboardHandler)
 	s.HandleFunc("GET /api/dashboard/search", h.SearchInvoiceHandler)
-	s.HandleFunc("GET /api/merchant/customers", h.GetMerchantCustomersHandler)
+	// s.HandleFunc("GET /api/merchant/customers", h.GetMerchantCustomersHandler) // duplicated w/ line 81, this seems older @Ben
+ 	s.HandleFunc("GET /api/customer/{customer_id}/invoices", h.GetCustomerInvoicesHandler)
 
 	// Admin Only Routes
 	s.HandleFunc("POST /api/merchant/create", h.CreateMerchantHandler)
