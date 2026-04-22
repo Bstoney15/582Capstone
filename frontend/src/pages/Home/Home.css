@@ -1,0 +1,338 @@
+/* Author: Ryan Grimsley
+  Created: 04/21/26
+  Description: CSS styles file for the home page
+*/
+.landing {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  color: var(--color-text);
+  background-color: var(--color-base);
+}
+
+.landing-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.2);
+  background-color: var(--color-base-variant);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.landing-logo {
+  font-weight: 700;
+  font-size: 1.35rem;
+  color: var(--color-primary);
+  letter-spacing: -0.02em;
+}
+
+.landing-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.landing-nav-link {
+  color: var(--color-muted);
+  font-weight: 500;
+  font-size: 0.95rem;
+  text-decoration: none;
+  padding: 0.35rem 0.5rem;
+}
+
+.landing-nav-link:hover {
+  color: var(--color-primary);
+}
+
+.landing-theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid rgba(128, 128, 128, 0.35);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.landing-theme-toggle:hover {
+  border-color: var(--color-primary);
+  background-color: rgba(128, 128, 128, 0.08);
+}
+
+.landing-theme-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.landing-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.landing-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 3rem 1.25rem 3.5rem;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -20%, rgba(15, 138, 95, 0.18), transparent),
+    linear-gradient(180deg, var(--color-base-variant) 0%, var(--color-base) 100%);
+  border-bottom: 1px solid rgba(128, 128, 128, 0.15);
+}
+
+[data-theme="dark"] .landing-hero {
+  background:
+    radial-gradient(ellipse 80% 55% at 50% -15%, rgba(15, 138, 95, 0.22), transparent),
+    linear-gradient(180deg, var(--color-base-variant) 0%, var(--color-base) 100%);
+}
+
+.landing-hero-inner {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.landing-hero-title {
+  margin: 0 0 0.75rem;
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+}
+
+.landing-hero-lead {
+  margin: 0 0 1.75rem;
+  font-size: 1.125rem;
+  line-height: 1.55;
+  color: var(--color-muted);
+  max-width: 36rem;
+}
+
+.landing-hero-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.landing-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.7rem 1.25rem;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: opacity 0.2s, border-color 0.2s, background-color 0.2s;
+}
+
+.landing-btn:hover {
+  opacity: 0.92;
+}
+
+.landing-btn-primary {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+
+.landing-btn-primary:hover {
+  color: #fff;
+}
+
+.landing-btn-secondary {
+  background: transparent;
+  color: var(--color-text);
+  border-color: rgba(128, 128, 128, 0.45);
+}
+
+.landing-btn-secondary:hover {
+  color: var(--color-text);
+  border-color: var(--color-primary);
+}
+
+.landing-section {
+  padding: 2.5rem 1.25rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.landing-section-title {
+  margin: 0 0 1.25rem;
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.landing-features {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .landing-features {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+  }
+}
+
+.landing-feature-card {
+  padding: 1.25rem;
+  border-radius: 12px;
+  border: 1px solid rgba(128, 128, 128, 0.25);
+  background-color: var(--color-base-variant);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.landing-feature-icon-wrap {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 138, 95, 0.12);
+  color: var(--color-primary);
+}
+
+.landing-feature-icon {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.landing-feature-card h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.landing-feature-card p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--color-muted);
+}
+
+.landing-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .landing-steps {
+    flex-direction: row;
+    gap: 1.25rem;
+    align-items: stretch;
+  }
+}
+
+.landing-step {
+  flex: 1;
+  padding: 1rem 1.1rem;
+  border-radius: 12px;
+  border: 1px dashed rgba(128, 128, 128, 0.35);
+  background-color: rgba(128, 128, 128, 0.04);
+}
+
+.landing-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: var(--color-primary);
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
+
+.landing-step p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--color-muted);
+}
+
+.landing-footer {
+  margin-top: auto;
+  padding: 1.5rem 1.25rem 2rem;
+  border-top: 1px solid rgba(128, 128, 128, 0.2);
+  background-color: var(--color-base-variant);
+}
+
+.landing-footer-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+@media (min-width: 640px) {
+  .landing-footer-inner {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.landing-footer-meta {
+  font-size: 0.875rem;
+  color: var(--color-muted);
+}
+
+.landing-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+
+.landing-footer-link {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-muted);
+}
+
+.landing-footer-link:hover {
+  color: var(--color-primary);
+}
+
+.landing-footer-dev {
+  font-size: 0.8rem;
+  color: var(--color-muted);
+  opacity: 0.75;
+}
+
+.landing-footer-dev a {
+  color: inherit;
+  font-weight: 500;
+}
+
+.landing-footer-dev a:hover {
+  color: var(--color-primary);
+  opacity: 1;
+}
