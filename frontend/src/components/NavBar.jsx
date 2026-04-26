@@ -53,6 +53,7 @@ export default function NavBar() {
             <div className="navbar-brand">XRPay</div>
             <div className="navbar-links">
                 <Link to="/dashboard" className="navbar-link">Dashboard</Link>
+                <Link to="/api-docs" className="navbar-link">API Docs</Link>
                 {selectedMerchant && (
                     <>
                         {requireRole("Admin") && (

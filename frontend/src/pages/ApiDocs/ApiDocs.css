@@ -1,0 +1,545 @@
+/* API Docs Styling - Redesigned */
+
+.api-docs {
+  width: 100%;
+  padding: 0;
+  min-height: 100vh;
+  background-color: var(--color-base);
+  color: var(--color-text);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.api-docs-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+
+/* Header - Left aligned */
+.api-docs-header {
+  text-align: left;
+  margin-bottom: 40px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.api-docs-header h1 {
+  font-size: 2rem;
+  margin: 0 0 8px 0;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.api-docs-header p {
+  font-size: 1rem;
+  margin: 0;
+  opacity: 0.7;
+  color: var(--color-muted);
+}
+
+/* Tab Navigation - Simple underline style */
+.api-tabs {
+  display: flex;
+  gap: 0;
+  margin: 0 0 32px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tab-button {
+  padding: 12px 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border: none;
+  background: none;
+  color: var(--color-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.tab-button:hover {
+  color: var(--color-text);
+}
+
+.tab-button.active {
+  color: var(--color-text);
+  border-bottom-color: var(--color-primary);
+}
+
+/* Tab Content */
+.tab-content {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Table of Contents - Sidebar style */
+.table-of-contents {
+  background-color: transparent;
+  padding: 0;
+  margin-bottom: 40px;
+  border: none;
+  border-left: 3px solid var(--color-primary);
+  padding-left: 20px;
+}
+
+.table-of-contents h3 {
+  margin: 0 0 12px 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-muted);
+}
+
+.table-of-contents ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.table-of-contents li {
+  padding: 0;
+}
+
+.table-of-contents a {
+  color: var(--color-text);
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+}
+
+.table-of-contents a:hover {
+  opacity: 1;
+  color: var(--color-primary);
+}
+
+.table-of-contents li {
+  padding: 8px 0;
+}
+
+.table-of-contents a {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+.table-of-contents a:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+/* Doc Sections - Clean left-aligned layout */
+.doc-section {
+  margin-bottom: 48px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.doc-section h2 {
+  font-size: 1.5rem;
+  margin: 0 0 16px 0;
+  padding-bottom: 8px;
+  border-bottom: none;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.doc-section h4 {
+  font-size: 1rem;
+  margin: 24px 0 12px 0;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.doc-section h5 {
+  font-size: 0.9rem;
+  margin: 20px 0 12px 0;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--color-muted);
+}
+
+.doc-section p {
+  line-height: 1.7;
+  margin: 0 0 16px 0;
+  font-size: 0.95rem;
+  color: var(--color-text);
+  opacity: 0.9;
+}
+
+.doc-section ul,
+.doc-section ol {
+  line-height: 1.7;
+  margin: 0 0 16px 0;
+  padding-left: 24px;
+}
+
+.doc-section li {
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+}
+
+/* Endpoint Card - Clean card design */
+.endpoint-card {
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  background-color: var(--color-base);
+}
+
+.endpoint-header {
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  background-color: var(--color-base-variant);
+}
+
+.endpoint-header:hover {
+  background-color: var(--color-bg-hover);
+}
+
+.endpoint-method-path {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.endpoint-method {
+  padding: 3px 8px;
+  border-radius: 3px;
+  background-color: var(--color-primary);
+  color: white;
+  font-weight: 600;
+  font-size: 0.75rem;
+  min-width: 45px;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.endpoint-path {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace;
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--color-text);
+}
+
+.endpoint-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.endpoint-title {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-muted);
+}
+
+.toggle-icon {
+  font-size: 0.7rem;
+  color: var(--color-muted);
+  transition: transform 0.2s ease;
+}
+
+.endpoint-details {
+  padding: 20px 16px;
+  border-top: 1px solid var(--color-border);
+  background-color: var(--color-base);
+}
+
+.endpoint-description {
+  margin: 0 0 16px 0;
+  font-size: 0.9rem;
+  color: var(--color-muted);
+  line-height: 1.6;
+}
+
+.endpoint-section {
+  margin-bottom: 20px;
+}
+
+.endpoint-section h5 {
+  margin: 0 0 12px 0;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-muted);
+}
+
+.endpoint-section p {
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+}
+
+/* Parameters Table - Clean minimal design */
+.params-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 16px;
+  font-size: 0.85rem;
+}
+
+.params-table thead th {
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  background-color: var(--color-base-variant);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.params-table tbody td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.params-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.params-table tbody tr:hover {
+  background-color: var(--color-bg-hover);
+}
+
+.param-name {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace;
+  font-weight: 500;
+  color: var(--color-primary);
+  font-size: 0.85rem;
+}
+
+.param-type {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace;
+  font-size: 0.8rem;
+  color: var(--color-muted);
+}
+
+/* Code Blocks - Clean terminal style */
+.code-block {
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  padding: 16px;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 12px 0 16px 0;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  border: none;
+}
+
+.code-block code {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace;
+  font-size: 0.8rem;
+}
+
+/* Example Block */
+.example-block {
+  margin-bottom: 20px;
+}
+
+.example-block h6 {
+  margin: 0 0 8px 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  letter-spacing: 0.3px;
+}
+
+/* Event Types - Simple list style */
+.event-list {
+  display: grid;
+  gap: 12px;
+}
+
+.event-type {
+  padding: 12px 16px;
+  border-left: 2px solid var(--color-primary);
+  border-radius: 0 4px 4px 0;
+  background-color: var(--color-base-variant);
+}
+
+.event-type h4 {
+  margin: 0 0 4px 0;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace;
+  font-size: 0.85rem;
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.event-type p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}
+
+/* Webhook Examples */
+.webhook-example {
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.webhook-example h4 {
+  margin: 0 0 12px 0;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace;
+  font-size: 0.85rem;
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.webhook-example:last-child {
+  border-bottom: none;
+}
+
+/* Inline Code */
+code {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace;
+  padding: 2px 5px;
+  border-radius: 3px;
+  font-size: 0.85em;
+  background-color: var(--color-base-variant);
+  color: var(--color-primary);
+}
+
+.doc-section p code,
+.doc-section li code {
+  background-color: var(--color-base-variant);
+  color: var(--color-primary);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .api-docs-container {
+    padding: 20px 15px;
+  }
+
+  .api-docs-header h1 {
+    font-size: 1.8rem;
+  }
+
+  .api-docs-header p {
+    font-size: 1rem;
+  }
+
+  .api-tabs {
+    gap: 0;
+  }
+
+  .tab-button {
+    padding: 12px 20px;
+    font-size: 0.95rem;
+  }
+
+  .endpoint-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .endpoint-method-path {
+    width: 100%;
+  }
+
+  .endpoint-toggle {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .endpoint-title {
+    font-size: 0.95rem;
+  }
+
+  .doc-section h2 {
+    font-size: 1.4rem;
+  }
+
+  .table-of-contents {
+    padding: 15px;
+  }
+
+  .params-table {
+    font-size: 0.85rem;
+  }
+
+  .params-table thead th,
+  .params-table tbody td {
+    padding: 8px;
+  }
+
+  .code-block {
+    font-size: 0.85rem;
+    padding: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .api-docs-container {
+    padding: 15px 10px;
+  }
+
+  .api-docs-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .tab-button {
+    padding: 10px 15px;
+    font-size: 0.9rem;
+  }
+
+  .endpoint-method {
+    font-size: 0.75rem;
+    padding: 3px 8px;
+    min-width: 45px;
+  }
+
+  .endpoint-path {
+    font-size: 0.85rem;
+  }
+
+  .doc-section h2 {
+    font-size: 1.2rem;
+  }
+
+  .doc-section h4 {
+    font-size: 1rem;
+  }
+
+  .params-table {
+    font-size: 0.8rem;
+  }
+
+  .params-table thead th,
+  .params-table tbody td {
+    padding: 6px;
+  }
+
+  .code-block {
+    font-size: 0.8rem;
+    padding: 10px;
+  }
+}
