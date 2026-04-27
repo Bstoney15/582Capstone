@@ -1,3 +1,6 @@
+/* Author: Connor-Williamson */
+/* Date Created: 2026-04-08 */
+/* Description: Styles the customers page with table layout, search input, and error/empty state styling. */
 .customers-page {
     padding: 2rem;
     max-width: 760px;

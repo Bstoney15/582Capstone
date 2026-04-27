@@ -1,3 +1,6 @@
+// Author: Connor-Williamson
+// Date Created: 2026-04-26
+// Description: Handles user profile retrieval and updates with authentication validation, including username uniqueness checks and password verification.
 package routes
 
 import (

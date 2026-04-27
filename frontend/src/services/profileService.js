@@ -1,3 +1,6 @@
+// Author: Connor-Williamson
+// Date Created: 2026-04-26
+// Description: Exports API service functions for fetching and updating user profile data via authenticated fetch requests.
 const API_BASE = "/api/user/profile";
 
 async function readError(response, fallbackMessage) {

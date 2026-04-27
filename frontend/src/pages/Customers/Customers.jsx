@@ -1,5 +1,6 @@
-// Author: Connor Williamson
-// Created: 04/0/26
+// Author: Connor-Williamson
+// Date Created: 2026-04-08
+// Description: React component that displays a searchable table of customers associated with a selected merchant, fetching data from the API.
 
 import { useState, useEffect } from "react";
 import { useMerchant } from "../../contexts/MerchantContext";
