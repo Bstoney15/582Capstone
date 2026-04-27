@@ -15,6 +15,7 @@ import CreateMerchant from "./pages/CreateMerchant/CreateMerchant.jsx";
 import Wallet from "./pages/Wallet/Wallet.jsx";
 import Users from "./pages/Users/Users.jsx";
 import Customers from "./pages/Customers/Customers.jsx";
+import ApiDocs from "./pages/ApiDocs/ApiDocs.jsx";
 import "./App.css";
 
 const router = createBrowserRouter([
@@ -37,12 +38,17 @@ const router = createBrowserRouter([
         path: "/widget-demo",
         element: <WidgetDemo />
       },
+      
       {
         element: <ProtectedRoute />,
         children: [
           {
             path: "/create-merchant",
             element: <CreateMerchant />
+          },
+          {
+            path: "/api-docs",
+            element: <ApiDocs />
           },
           {
             path: "/dashboard",
