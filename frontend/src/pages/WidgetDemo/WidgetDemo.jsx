@@ -139,6 +139,7 @@ export default function WidgetDemo() {
         triggerSelector: "#widget-demo-hidden-trigger",
         successUrl,
         apiBaseUrl: "",
+        environment: 'development',
         debug: true,
       });
 

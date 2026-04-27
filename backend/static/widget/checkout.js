@@ -1,3 +1,4 @@
+
 // Author: Benjamin Stonestreet
 // Created: 2026-02-02
 
@@ -46,6 +47,11 @@
 
   function isDebugEnabled() {
     return !!STATE.config?.debug;
+  }
+
+  function isTestnet() {
+    const env = (STATE.config?.environment || '').toLowerCase();
+    return env === 'development' || env === 'testing' || env === 'testnet';
   }
 
   function isUuid(value) {
@@ -546,6 +552,27 @@
       color: '#111827',
     });
 
+    // — Testnet warning banner —
+    const testnetBanner = document.createElement('div');
+    Object.assign(testnetBanner.style, {
+      display: 'none',               // hidden by default
+      padding: '10px 14px',
+      borderRadius: '8px',
+      backgroundColor: '#fef3c7',
+      border: '2px solid #f59e0b',
+      color: '#92400e',
+      fontSize: '13px',
+      fontWeight: '600',
+      lineHeight: '1.4',
+      textAlign: 'center',
+    });
+    testnetBanner.textContent =
+      '⚠️ TESTNET MODE — This uses the Ripple Test Network. Do NOT send real XRP to this address.';
+
+    if (isTestnet()) {
+      testnetBanner.style.display = 'block';
+    }
+
     const status = document.createElement('p');
     status.textContent = 'Ready to start payment flow.';
     Object.assign(status.style, {
@@ -669,7 +696,7 @@
       closeModal();
     });
 
-    body.append(title, badge, detailsWrap, status, spinnerWrap, closeButton);
+    body.append(title, testnetBanner, badge, detailsWrap, status, spinnerWrap, closeButton);
     modal.appendChild(body);
     document.body.append(backdrop, modal);
 
@@ -902,6 +929,7 @@
         successUrl: config.successUrl,
         apiBaseUrl: config.apiBaseUrl || '',
         debug: !!config.debug,
+        environment: config.environment || 'production',
       };
 
       buildModal();
