@@ -72,7 +72,12 @@ func (h *Handler) GetInvoiceForCheckoutHandler(w http.ResponseWriter, r *http.Re
 	response := InvoiceCheckoutResponse{
 		InvoiceID:       invoice.InvoiceID,
 		AmountDrops:     invoiceAmountToDrops(invoice.InvoiceAmountCharged),
-		DestinationTag:  0,
+		DestinationTag:  func() uint32 {
+			if invoice.InvoiceDestinationTag != nil {
+				return *invoice.InvoiceDestinationTag
+			}
+			return 0
+		}(),
 		MerchantAddress: wallet.MerchantCryptoWalletAddress,
 	}
 

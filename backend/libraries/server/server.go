@@ -150,5 +150,8 @@ func (s *Server) AutoMigrateDB() error {
 		// XRPL ledger reconciliation state.
 		&models.XRPLCheckpoint{},
 		&models.XRPLPayment{},
+
+		// Audit logs.
+		&models.WebhookLog{},
 	)
 }
