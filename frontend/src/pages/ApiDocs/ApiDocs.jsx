@@ -1,3 +1,6 @@
+// Author: Ryan Grimsley
+// Created: 04/25/26
+// Description: React page of api/webhooks docs, for devs to see api endpoints etc.
 import React, { useState } from 'react';
 import { useContext } from 'react';
 import './ApiDocs.css';
