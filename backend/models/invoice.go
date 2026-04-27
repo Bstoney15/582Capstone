@@ -15,6 +15,7 @@ type Invoice struct {
 	InvoiceID            string          `gorm:"primaryKey;type:varchar(36)" json:"invoice_id"`
 	InvoiceDateTime      time.Time       `gorm:"not null;autoCreateTime" json:"invoice_date_time"`
 	InvoiceAmountCharged decimal.Decimal `gorm:"not null;type:decimal(16,4)" json:"invoice_amount_charged"`
+	InvoiceDestinationTag *uint32        `gorm:"index" json:"invoice_destination_tag,omitempty"`
 	InvoiceStatus        string          `gorm:"not null" json:"invoice_status"`
 	InvoiceFeeAmount     decimal.Decimal `gorm:"not null;type:decimal(16,4)" json:"invoice_fee_amount"`
 	InvoiceFeeStatus     string          `gorm:"not null" json:"invoice_fee_status"`

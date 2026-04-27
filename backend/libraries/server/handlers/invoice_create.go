@@ -6,6 +6,8 @@ package routes
 import (
 	"backend/libraries/apiauth"
 	"backend/models"
+	"crypto/rand"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -44,6 +46,31 @@ type coinbaseSpotResponse struct {
 	Data struct {
 		Amount string `json:"amount"`
 	} `json:"data"`
+}
+
+func (h *Handler) allocateInvoiceDestinationTag() (uint32, error) {
+	for attempt := 0; attempt < 8; attempt++ {
+		var raw [4]byte
+		if _, err := rand.Read(raw[:]); err != nil {
+			return 0, err
+		}
+
+		tag := binary.BigEndian.Uint32(raw[:])
+		if tag == 0 {
+			continue
+		}
+
+		var existing int64
+		if err := h.DB.Model(&models.Invoice{}).Where("invoice_destination_tag = ?", tag).Count(&existing).Error; err != nil {
+			return 0, err
+		}
+
+		if existing == 0 {
+			return tag, nil
+		}
+	}
+
+	return 0, fmt.Errorf("failed to allocate destination tag")
 }
 
 func parseDecimalInput(value any) (decimal.Decimal, bool, error) {
@@ -182,9 +209,16 @@ func (h *Handler) CreateInvoiceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	destinationTag, destinationTagErr := h.allocateInvoiceDestinationTag()
+	if destinationTagErr != nil {
+		http.Error(w, "failed to allocate destination tag", http.StatusInternalServerError)
+		return
+	}
+
 	invoice := models.Invoice{
 		InvoiceID:            uuid.New().String(),
 		InvoiceAmountCharged: amountXRP,
+		InvoiceDestinationTag: &destinationTag,
 		InvoiceStatus:        "created",
 		InvoiceFeeAmount:     decimal.Zero,
 		InvoiceFeeStatus:     "unpaid",

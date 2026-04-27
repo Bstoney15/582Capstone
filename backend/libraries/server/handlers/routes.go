@@ -76,6 +76,15 @@ func (h *Handler) RegisterRoutes(s *http.ServeMux) {
 	s.HandleFunc("POST /api/merchant/api_key", h.CreateMerchantAPIKeyHandler)
 	s.HandleFunc("DELETE /api/merchant/api_key/{api_key}", h.DeleteMerchantAPIKeyHandler)
 
+	// Merchant Webhook Config Routes
+	s.HandleFunc("GET /api/merchant/webhooks", h.GetMerchantWebhooksHandler)
+	s.HandleFunc("POST /api/merchant/webhooks", h.CreateMerchantWebhookHandler)
+	s.HandleFunc("DELETE /api/merchant/webhooks/{webhook_id}", h.DeleteMerchantWebhookHandler)
+
+	// Webhook Event Log Routes
+	s.HandleFunc("GET /api/merchant/webhook_logs", h.ListWebhookLogsHandler)
+	s.HandleFunc("POST /api/merchant/webhook_logs/{log_id}/resend", h.ResendWebhookHandler)
+
 	// Merchant-scoped CRUD routes authenticated by merchant API key
 	s.Handle("POST /api/v1/merchant/customers", apiauth.RequireMerchantAPIKey(h.DB, http.HandlerFunc(h.CreateMerchantCustomerHandler)))
 	s.Handle("GET /api/v1/merchant/customers", apiauth.RequireMerchantAPIKey(h.DB, http.HandlerFunc(h.ListMerchantCustomersHandler)))
