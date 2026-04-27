@@ -1,7 +1,8 @@
+// invoice_public.go – public handler that retrieves invoice details for the checkout widget.
 package routes
 
 // Author: Benjamin Stonestreet
-// Created: 2026-03-08
+// Created: 2026-03-01
 
 
 import (

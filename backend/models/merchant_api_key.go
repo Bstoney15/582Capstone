@@ -1,9 +1,10 @@
+// merchant_api_key.go – GORM model storing hashed API keys that authenticate merchant API requests.
 package models
 
-import "time"
-
 // Author: Benjamin Stonestreet
-// Created: 2026-02-02
+// Created: 2026-02-09
+
+import "time"
 
 // MerchantAPIKey stores a hashed API key that allows merchants to authenticate
 // requests to the MyPay API.

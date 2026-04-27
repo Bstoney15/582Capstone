@@ -1,5 +1,5 @@
 // Author: Benjamin Stonestreet, Ryan Grimsley
-// Created: 2026-02-21
+// Created: 2026-02-20
 // Last Updated: 2026-03-28
 // Description: This context provides a way to toggle between light and dark themes for the application.
 

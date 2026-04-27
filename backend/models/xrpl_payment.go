@@ -1,7 +1,8 @@
+// xrpl_payment.go – GORM model representing a payment transaction recorded from the XRP Ledger.
 package models
 
 // Author: Benjamin Stonestreet
-// Created: 2026-02-02
+// Created: 2026-03-01
 
 import "time"
 

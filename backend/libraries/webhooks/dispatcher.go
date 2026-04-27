@@ -1,7 +1,8 @@
-// Authors: Ben Stonestreet
-// Created: 04/12/26
-// Description: webhook dipatch
+// dispatcher.go – HTTP webhook dispatcher with HMAC-SHA256 request signing and configurable retry logic.
 package webhooks
+
+// Author: Benjamin Stonestreet
+// Created: 2026-04-12
 
 import (
 	"bytes"
@@ -88,6 +89,7 @@ func NewDispatcher(config DispatcherConfig) *Dispatcher {
 }
 
 // Dispatch posts a signed event envelope to the target webhook URL.
+// It retries on transient failures up to the configured MaxAttempts with linear back-off.
 func (d *Dispatcher) Dispatch(ctx context.Context, webhookURL string, webhookKey string, eventType string, payload interface{}) (*DispatchResult, error) {
 	webhookURL = strings.TrimSpace(webhookURL)
 	webhookKey = strings.TrimSpace(webhookKey)
@@ -134,6 +136,7 @@ func (d *Dispatcher) Dispatch(ctx context.Context, webhookURL string, webhookKey
 			break
 		}
 
+		// Apply linear back-off between attempts.
 		backoff := time.Duration(attempt) * d.backoff
 		select {
 		case <-ctx.Done():
@@ -149,6 +152,7 @@ func (d *Dispatcher) Dispatch(ctx context.Context, webhookURL string, webhookKey
 	return nil, lastErr
 }
 
+// dispatchAttempt performs a single HTTP POST attempt to the webhook endpoint.
 func (d *Dispatcher) dispatchAttempt(ctx context.Context, webhookURL string, eventType string, body []byte, timestamp string, signatureHeader string) (*DispatchResult, error) {
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, webhookURL, bytes.NewReader(body))
 	if err != nil {
@@ -182,6 +186,8 @@ func (d *Dispatcher) dispatchAttempt(ctx context.Context, webhookURL string, eve
 	return result, fmt.Errorf("webhook endpoint returned status %d", response.StatusCode)
 }
 
+// isRetryableError returns true if the given result and error indicate a transient
+// failure that is worth retrying (network errors, timeouts, 429, 5xx responses).
 func isRetryableError(result *DispatchResult, err error) bool {
 	if err == nil {
 		return false

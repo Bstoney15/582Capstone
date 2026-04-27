@@ -1,3 +1,4 @@
+// main.go – entry point for the backend service; initialises and starts the HTTP server.
 package main
 
 // Author: Benjamin Stonestreet

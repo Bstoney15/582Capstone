@@ -1,7 +1,8 @@
-// Authors: Ben Stonestreet
-// Created: 02/15/26
-// Description: handler function for signup
+// signup.go – handler that registers a new user account and creates an initial session.
 package routes
+
+// Author: Benjamin Stonestreet
+// Created: 2026-02-15
 
 import (
 	"backend/libraries/sessionManager"
@@ -13,6 +14,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// SignupRequest is the JSON payload expected by SignupHandler.
 type SignupRequest struct {
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
@@ -20,6 +22,8 @@ type SignupRequest struct {
 	Password  string `json:"password"`
 }
 
+// SignupHandler creates a new user account, bcrypt-hashes the password, starts a session,
+// and returns the new user's basic info.
 func (h *Handler) SignupHandler(w http.ResponseWriter, r *http.Request) {
 	var req SignupRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -27,7 +31,7 @@ func (h *Handler) SignupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if username already exists
+	// Check if username already exists.
 	var existingUser models.User
 	if err := h.DB.Where("user_username = ?", req.Username).First(&existingUser).Error; err == nil {
 		http.Error(w, "Username already taken", http.StatusConflict)
@@ -54,6 +58,7 @@ func (h *Handler) SignupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Create a session immediately so the user is logged in after signup.
 	sessionID := sessionManager.CreateSession(user.UserID)
 	sessionManager.SetSessionCookie(w, sessionID)
 

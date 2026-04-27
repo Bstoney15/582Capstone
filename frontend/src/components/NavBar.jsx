@@ -1,5 +1,5 @@
 // Author: Benjamin Stonestreet
-// Created: 2026-02-21
+// Created: 2026-02-20
 // Description: This component is the navigation bar for the application.
 
 import { useState, useRef, useEffect } from "react";

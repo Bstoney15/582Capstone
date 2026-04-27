@@ -1,7 +1,8 @@
-// Authors: Ben Stonestreet
-// Created: 04/07/26
-// Description: handler function for logout
+// logout.go – handler that clears the caller's session cookie and ends their authenticated session.
 package routes
+
+// Author: Benjamin Stonestreet
+// Created: 2026-04-07
 
 import (
 	"backend/libraries/sessionManager"

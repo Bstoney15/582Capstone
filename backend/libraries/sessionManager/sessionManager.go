@@ -1,10 +1,8 @@
-// File contains functions for managing session instances using JWT
-//
-// Author: Benjamin Stonestreet
-// Date: 2025-10-23
-// Refactored to JWT: 2026-02-20
-
+// sessionManager.go – JWT-based session management: create, validate, rotate, and clear session cookies.
 package sessionManager
+
+// Author: Benjamin Stonestreet
+// Created: 2026-02-02
 
 import (
 	"fmt"
@@ -15,10 +13,13 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-const sessionLength = 600 // session length in seconds (10 minutes)
+// sessionLength is the session duration in seconds (10 minutes).
+const sessionLength = 600
+
+// SessionCookieName is the name of the HTTP cookie that carries the JWT session token.
 const SessionCookieName = "session_id"
 
-// secret key used to sign the tokens. In a production app, this should be an environment variable.
+// jwtKey is the HMAC signing key, loaded from the JWT_SECRET_KEY environment variable.
 var jwtKey = []byte(getJWTKey())
 
 // getJWTKey retrieves the JWT secret key from the environment,
@@ -40,13 +41,13 @@ type sessionData struct {
 	Expiry    time.Time
 }
 
-// SessionClaims represents the structure of the JWT payload
+// SessionClaims represents the structure of the JWT payload.
 type SessionClaims struct {
 	UserID string `json:"user_id"`
 	jwt.RegisteredClaims
 }
 
-// creates a new session for the given user ID and returns the JWT token
+// CreateSession creates a new session for the given user ID and returns the signed JWT token.
 func CreateSession(userID string) string {
 	expirationTime := time.Now().Add(sessionLength * time.Second)
 
@@ -68,8 +69,9 @@ func CreateSession(userID string) string {
 	return tokenString
 }
 
-// retrieves session data for the given JWT token.
-// Also returns a string containing a new token if the current one was close to expiring and got rotated.
+// CheckSession validates the given JWT token and returns the session data.
+// If the token is close to expiring it is automatically rotated; the second
+// return value is the new token string (empty if no rotation occurred).
 func CheckSession(sessionToken string) (sessionData, string, bool) {
 	claims := &SessionClaims{}
 
@@ -84,10 +86,10 @@ func CheckSession(sessionToken string) (sessionData, string, bool) {
 	expiry := claims.ExpiresAt.Time
 	var newToken string
 
-	// Rotate the token if it has less than a minute until expiry
+	// Rotate the token if it has less than a minute until expiry.
 	if time.Until(expiry) < 1*time.Minute {
 		newToken = CreateSession(claims.UserID)
-		// Update the session details since we are issuing a new token
+		// Update the session details since we are issuing a new token.
 		sessionToken = newToken
 		expiry = time.Now().Add(sessionLength * time.Second)
 	}
@@ -99,7 +101,7 @@ func CheckSession(sessionToken string) (sessionData, string, bool) {
 	}, newToken, true
 }
 
-// SetSessionCookie sets the JWT token in a secure http-only cookie
+// SetSessionCookie sets the JWT token in a secure http-only cookie.
 func SetSessionCookie(w http.ResponseWriter, sessionToken string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     SessionCookieName,
@@ -126,7 +128,7 @@ func ClearSessionCookie(w http.ResponseWriter) {
 	})
 }
 
-// GetSessionToken retrieves the session token from the request cookies
+// GetSessionToken retrieves the session token from the request cookies.
 func GetSessionToken(r *http.Request) (string, error) {
 	cookie, err := r.Cookie(SessionCookieName)
 	if err != nil {

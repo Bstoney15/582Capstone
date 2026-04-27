@@ -1,7 +1,8 @@
+// verify.go – handler that accepts a transaction hash and queues background verification of an invoice payment.
 package routes
 
 // Author: Benjamin Stonestreet
-// Created: 2026-03-08
+// Created: 2026-03-01
 
 
 import (

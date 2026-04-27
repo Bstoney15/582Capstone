@@ -1,3 +1,4 @@
+// role.go – GORM model mapping users to merchants with a named authorization role.
 package models
 
 // Author: Benjamin Stonestreet

@@ -1,6 +1,7 @@
-// Authors: Ben Stonestreet, Connor Williamson, Charley Finling, Ryan Grimsley
-// Created: 02/12/26
-// Description: main app page
+// App.jsx – root application component that defines the client-side router and wraps the app in global context providers.
+// Author: Ben Stonestreet, Connor Williamson, Charley Finling, Ryan Grimsley
+// Created: 2026-02-02
+
 import { createBrowserRouter, RouterProvider, Outlet, Navigate } from "react-router-dom";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -21,6 +22,8 @@ import Customers from "./pages/Customers/Customers.jsx";
 import ApiDocs from "./pages/ApiDocs/ApiDocs.jsx";
 import "./App.css";
 
+// router defines all application routes. Protected routes are nested under ProtectedRoute,
+// which enforces authentication and renders the shared NavBar.
 const router = createBrowserRouter([
   {
     element: <Outlet />,
@@ -41,7 +44,7 @@ const router = createBrowserRouter([
         path: "/widget-demo",
         element: <WidgetDemo />
       },
-      
+
       {
         element: <ProtectedRoute />,
         children: [
@@ -99,6 +102,11 @@ const router = createBrowserRouter([
   }
 ]);
 
+/**
+ * App is the root component. It wraps the entire application in ThemeProvider and
+ * AuthProvider so that theme and auth state are available to every descendant.
+ * @returns {JSX.Element} The rendered application with router.
+ */
 export default function App() {
   return (
     <ThemeProvider>

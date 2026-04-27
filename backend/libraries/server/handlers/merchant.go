@@ -1,8 +1,8 @@
-// Authors: Ryan Grimsley, Ben Stonestreet
-// Date Created: 02/20/26
-// Description: File containing handler functions for all api routes related to merchants
-
+// merchant.go – handlers for merchant creation, listing, user management, and wallet operations.
 package routes
+
+// Author: Ryan Grimsley, Ben Stonestreet
+// Created: 2026-02-20
 
 import (
 	"backend/libraries/sessionManager"
@@ -17,12 +17,15 @@ import (
 	"gorm.io/gorm"
 )
 
+// MerchantResponse is the summary shape returned by GetMerchantsHandler for each merchant the caller belongs to.
 type MerchantResponse struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
 	Role string `json:"role"`
 }
 
+// CreateMerchantHandler creates a new merchant along with its business profile, address, and beneficial owner.
+// All records are written inside a single DB transaction so the create is atomic.
 func (h *Handler) CreateMerchantHandler(w http.ResponseWriter, r *http.Request) {
 	sessionToken, err := sessionManager.GetSessionToken(r)
 	if err != nil {
@@ -69,6 +72,7 @@ func (h *Handler) CreateMerchantHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// All fields are required; reject the request if any are missing.
 	if requestBody.MerchantName == "" ||
 		requestBody.MerchantBusinessProfileDBAName == "" ||
 		requestBody.MerchantBusinessProfileRegistrationNumber == "" ||
@@ -122,6 +126,7 @@ func (h *Handler) CreateMerchantHandler(w http.ResponseWriter, r *http.Request) 
 	addressID := uuid.New().String()
 	ownerID := uuid.New().String()
 
+	// Write all five records atomically; a failure in any step rolls the entire transaction back.
 	err = h.DB.Transaction(func(tx *gorm.DB) error {
 		merchant := models.Merchant{
 			MerchantID:   merchantID,
@@ -207,6 +212,7 @@ func (h *Handler) CreateMerchantHandler(w http.ResponseWriter, r *http.Request) 
 	})
 }
 
+// GetMerchantsHandler returns all merchants the authenticated caller belongs to, along with their role.
 func (h *Handler) GetMerchantsHandler(w http.ResponseWriter, r *http.Request) {
 	sessionToken, err := sessionManager.GetSessionToken(r)
 	if err != nil {
@@ -242,11 +248,13 @@ func (h *Handler) GetMerchantsHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(merchantResponses)
 }
 
-// defines if these roles are allowed to be set
+// allowedRolesToSet defines which roles can be assigned by AddUserHandler.
+// Owner cannot be self-assigned to prevent privilege escalation.
 var allowedRolesToSet = map[string]bool{
 	models.RoleAdmin: true, models.RoleDeveloper: true, models.RoleOwner: false,
 }
 
+// AddUserHandler adds a user to a merchant with the given role. The caller must be an Admin or Owner.
 func (h *Handler) AddUserHandler(w http.ResponseWriter, r *http.Request) {
 	sessionToken, err := sessionManager.GetSessionToken(r)
 	if err != nil {
@@ -281,7 +289,7 @@ func (h *Handler) AddUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Require caller to be Admin or Owner for this merchant
+	// Require caller to be Admin or Owner for this merchant.
 	var callerRole models.Role
 	if err := h.DB.Where("role_merchant_id = ? AND role_user_id = ? AND role_name IN ?",
 		requestBody.MerchantID, sessionData.UserID, []string{models.RoleAdmin, models.RoleOwner}).First(&callerRole).Error; err != nil {
@@ -293,7 +301,7 @@ func (h *Handler) AddUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verify merchant exists
+	// Verify merchant exists.
 	var merchant models.Merchant
 	if err := h.DB.Where("merchant_id = ?", requestBody.MerchantID).First(&merchant).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -314,7 +322,7 @@ func (h *Handler) AddUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Avoid duplicate: user already has a role for this merchant
+	// Avoid duplicate: user already has a role for this merchant.
 	var existing models.Role
 	if err := h.DB.Where("role_merchant_id = ? AND role_user_id = ?", requestBody.MerchantID, user.UserID).First(&existing).Error; err == nil {
 		http.Error(w, "User already has a role for this merchant", http.StatusConflict)
@@ -343,19 +351,19 @@ func (h *Handler) AddUserHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// defines if these roles are allowed to edit other users roles
+// rolesAllowedToEdit defines which roles are permitted to modify other users' roles.
 var rolesAllowedToEdit = map[string]bool{
 	models.RoleAdmin: true, models.RoleDeveloper: false, models.RoleOwner: true,
 }
 
+// EditUserHandler updates the role of an existing user within a merchant.
+// The editor must hold a role that is in rolesAllowedToEdit.
 func (h *Handler) EditUserHandler(w http.ResponseWriter, r *http.Request) {
-	// auth copied from GetMerchantsHandler func
 	sessionToken, err := sessionManager.GetSessionToken(r)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-	// may need to replace first _ with sessionData
 	_, _, active := sessionManager.CheckSession(sessionToken)
 	if !active {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -369,30 +377,30 @@ func (h *Handler) EditUserHandler(w http.ResponseWriter, r *http.Request) {
 		EditorID   string `json:"editor_id"`
 	}
 
-	// try to parse request body
 	var requestBody EditUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
 		http.Error(w, "Error parsing request", http.StatusBadRequest)
 		return
 	}
-	// make sure request has all required params
+
 	if requestBody.MerchantID == "" || requestBody.UserID == "" || requestBody.Role == "" || requestBody.EditorID == "" {
 		http.Error(w, "merchant_id, user_id, and role are required", http.StatusBadRequest)
 		return
 	}
-	// get user who is trying to make an edit's role
+
+	// Look up the editor's role to determine if they have edit permission.
 	var editorRole models.Role
 	if err := h.DB.Where("role_user_id = ? AND role_merchant_id = ?", requestBody.EditorID, requestBody.MerchantID).First(&editorRole).Error; err != nil {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
-	// check if that role is allowed to edit
+
 	if !rolesAllowedToEdit[editorRole.RoleName] {
 		http.Error(w, "invalid role", http.StatusBadRequest)
 		return
 	}
 
-	// Verify merchant exists
+	// Verify merchant exists.
 	var merchant models.Merchant
 	if err := h.DB.Where("merchant_id = ?", requestBody.MerchantID).First(&merchant).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -402,7 +410,8 @@ func (h *Handler) EditUserHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to verify merchant", http.StatusInternalServerError)
 		return
 	}
-	// get user were trying to edit
+
+	// Look up the user being edited.
 	var user models.User
 	if err := h.DB.Where("user_id = ?", requestBody.UserID).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -412,13 +421,14 @@ func (h *Handler) EditUserHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to lookup user", http.StatusInternalServerError)
 		return
 	}
-	// get role associated with user
+
+	// Fetch the user's existing role record and update it.
 	var userRoleToEdit models.Role
 	if err := h.DB.Where("role_merchant_id = ? AND role_user_id = ?", requestBody.MerchantID, user.UserID).First(&userRoleToEdit).Error; err != nil {
 		http.Error(w, "failed to find users role", http.StatusNotFound)
 		return
 	}
-	// edit the users role
+
 	userRoleToEdit.RoleName = requestBody.Role
 	h.DB.Save(&userRoleToEdit)
 
@@ -430,8 +440,9 @@ func (h *Handler) EditUserHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// GetAllMerchantUsersHandler returns all users associated with the specified merchant.
+// The caller must be an Admin or Owner of the merchant.
 func (h *Handler) GetAllMerchantUsersHandler(w http.ResponseWriter, r *http.Request) {
-	// auth copied from GetMerchantsHandler func
 	sessionToken, err := sessionManager.GetSessionToken(r)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -449,8 +460,8 @@ func (h *Handler) GetAllMerchantUsersHandler(w http.ResponseWriter, r *http.Requ
 		http.Error(w, "merchant_id query parameter needed", http.StatusBadRequest)
 		return
 	}
-	// check if user is actually a part of the merchants users for the merchant whos users are being requested
-	// also check if user has role with priveledge to access all users list, currently i said only admin and owner can see users
+
+	// Confirm the caller has a privileged role before exposing the user list.
 	var users_role models.Role
 	if err := h.DB.Where("role_merchant_id = ? AND role_user_id = ? and role_name IN ?", merchantID, sessionData.UserID, []string{models.RoleAdmin, models.RoleOwner}).First(&users_role).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -461,13 +472,12 @@ func (h *Handler) GetAllMerchantUsersHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// get the users of the merchant
 	var roles []models.Role
 	if err := h.DB.Preload("User").Where("role_merchant_id = ?", merchantID).Find(&roles).Error; err != nil {
 		http.Error(w, "Search for users failed", http.StatusInternalServerError)
 		return
 	}
-	// format users correctly and write to response
+
 	type MerchantUserResponse struct {
 		UserID     string `json:"user_id"`
 		Username   string `json:"username"`
@@ -494,6 +504,8 @@ func (h *Handler) GetAllMerchantUsersHandler(w http.ResponseWriter, r *http.Requ
 	json.NewEncoder(w).Encode(responses)
 }
 
+// RemoveMerchantUserHandler removes a user's role from a merchant, revoking their access.
+// The editor must hold a role that is in rolesAllowedToEdit.
 func (h *Handler) RemoveMerchantUserHandler(w http.ResponseWriter, r *http.Request) {
 	sessionToken, err := sessionManager.GetSessionToken(r)
 	if err != nil {
@@ -513,31 +525,30 @@ func (h *Handler) RemoveMerchantUserHandler(w http.ResponseWriter, r *http.Reque
 		EditorID   string `json:"editor_id"`
 	}
 
-	// try to parse request body
 	var requestBody RemoveUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
 		http.Error(w, "Error parsing request", http.StatusBadRequest)
 		return
 	}
 
-	// make sure request has all required params
 	if requestBody.MerchantID == "" || requestBody.UserID == "" || requestBody.EditorID == "" {
 		http.Error(w, "merchant_id, user_id, and editor_id are required", http.StatusBadRequest)
 		return
 	}
-	// get user who is trying to remove's role
+
+	// Verify the editor has sufficient privilege.
 	var removerRole models.Role
 	if err := h.DB.Where("role_user_id = ? AND role_merchant_id = ?", requestBody.EditorID, requestBody.MerchantID).First(&removerRole).Error; err != nil {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
-	// check if that role is allowed to edit
+
 	if !rolesAllowedToEdit[removerRole.RoleName] {
 		http.Error(w, "invalid role", http.StatusBadRequest)
 		return
 	}
 
-	// Verify merchant exists
+	// Verify merchant exists.
 	var merchant models.Merchant
 	if err := h.DB.Where("merchant_id = ?", requestBody.MerchantID).First(&merchant).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -547,7 +558,8 @@ func (h *Handler) RemoveMerchantUserHandler(w http.ResponseWriter, r *http.Reque
 		http.Error(w, "Failed to verify merchant", http.StatusInternalServerError)
 		return
 	}
-	// get user role we're trying to edit
+
+	// Fetch the role record to delete.
 	var userRole models.Role
 	if err := h.DB.Where("role_user_id = ?", requestBody.UserID).First(&userRole).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -557,10 +569,9 @@ func (h *Handler) RemoveMerchantUserHandler(w http.ResponseWriter, r *http.Reque
 		http.Error(w, "Failed to lookup user", http.StatusInternalServerError)
 		return
 	}
-	// make the deletion of that role record
+
 	h.DB.Delete(&userRole)
 
-	// craft response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]interface{}{
@@ -568,8 +579,9 @@ func (h *Handler) RemoveMerchantUserHandler(w http.ResponseWriter, r *http.Reque
 	})
 }
 
+// GetMerchantWalletHandler returns the XRPL wallet address for the specified merchant.
+// The caller must be an Admin or Owner.
 func (h *Handler) GetMerchantWalletHandler(w http.ResponseWriter, r *http.Request) {
-	// check authentication
 	sessionToken, err := sessionManager.GetSessionToken(r)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -581,14 +593,14 @@ func (h *Handler) GetMerchantWalletHandler(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-	// get query parameter
+
 	merchantID := r.URL.Query().Get("merchant_id")
 	if merchantID == "" {
 		http.Error(w, "merchant_id query parameter needed", http.StatusBadRequest)
 		return
 	}
-	// check if user is actually a part of the merchants users
-	// also check if user has role with priviledge to access wallet
+
+	// Confirm the caller has a privileged role for this merchant.
 	var users_role models.Role
 	if err := h.DB.Where("role_merchant_id = ? AND role_user_id = ? and role_name IN ?", merchantID, sessionData.UserID, []string{models.RoleAdmin, models.RoleOwner}).First(&users_role).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -598,13 +610,13 @@ func (h *Handler) GetMerchantWalletHandler(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "DB error", http.StatusInternalServerError)
 		return
 	}
-	// get the wallet
+
 	var wallet models.MerchantCryptoWallet
 	if err := h.DB.Where("merchant_crypto_wallet_merchant_id = ?", merchantID).First(&wallet).Error; err != nil {
 		http.Error(w, "Error retrieving wallet", http.StatusInternalServerError)
 		return
 	}
-	// make struct for response
+
 	type WalletResponse struct {
 		WalletAddress string `json:"wallet_address"`
 	}
@@ -612,14 +624,15 @@ func (h *Handler) GetMerchantWalletHandler(w http.ResponseWriter, r *http.Reques
 	resp := WalletResponse{
 		WalletAddress: wallet.MerchantCryptoWalletAddress,
 	}
-	// send response
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(resp)
 }
 
+// SetMerchantWalletHandler updates the XRPL wallet address for the specified merchant.
+// The caller must be an Admin or Owner.
 func (h *Handler) SetMerchantWalletHandler(w http.ResponseWriter, r *http.Request) {
-	// check authentication
 	sessionToken, err := sessionManager.GetSessionToken(r)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -632,14 +645,13 @@ func (h *Handler) SetMerchantWalletHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// get query parameter
 	merchantID := r.URL.Query().Get("merchant_id")
 	if merchantID == "" {
 		http.Error(w, "merchant_id query parameter needed", http.StatusBadRequest)
 		return
 	}
-	// check if user is actually a part of the merchants users
-	// also check if user has role with priviledge to access wallet
+
+	// Confirm the caller has a privileged role for this merchant.
 	var users_role models.Role
 	if err := h.DB.Where("role_merchant_id = ? AND role_user_id = ? and role_name IN ?", merchantID, sessionData.UserID, []string{models.RoleAdmin, models.RoleOwner}).First(&users_role).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -649,7 +661,7 @@ func (h *Handler) SetMerchantWalletHandler(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "DB error", http.StatusInternalServerError)
 		return
 	}
-	// get request body (wallet address)
+
 	type SetWalletRequest struct {
 		WalletAddress string `json:"wallet_address"`
 	}
@@ -660,13 +672,12 @@ func (h *Handler) SetMerchantWalletHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// make sure request has all required params
 	if requestBody.WalletAddress == "" {
 		http.Error(w, "wallet_address required", http.StatusBadRequest)
 		return
 	}
 
-	// set wallet address
+	// Fetch the existing wallet record and update the address in place.
 	//! this assumes the entry for the merchants wallet exists, not sure if that will be the real way its implemented
 	// for ex, if new merchant account by default has no crytpo wallet entry
 	var MerchantCryptoWallet models.MerchantCryptoWallet
@@ -674,7 +685,7 @@ func (h *Handler) SetMerchantWalletHandler(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "failed to find merchant crypto wallet entry", http.StatusNotFound)
 		return
 	}
-	// edit the users role
+
 	MerchantCryptoWallet.MerchantCryptoWalletAddress = requestBody.WalletAddress
 	h.DB.Save(&MerchantCryptoWallet)
 

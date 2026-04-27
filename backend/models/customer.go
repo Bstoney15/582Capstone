@@ -1,7 +1,8 @@
+// customer.go – GORM model representing a customer associated with a merchant.
 package models
 
 // Author: Benjamin Stonestreet
-// Created: 2026-02-02
+// Created: 2026-02-09
 
 // Customer represents a customer of a merchant, storing their basic contact info
 // and tying them to a specific merchant via CustomerMerchantID.

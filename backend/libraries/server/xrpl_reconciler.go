@@ -1,13 +1,8 @@
-// Author: Benjamin Stonestreet
-// Created: 2026-03-03
-// Description:
-// Package server – this file implements the XRPLReconciler, a background
-// worker that periodically polls the XRP Ledger (via JSON-RPC) for incoming
-// payments to every verified merchant wallet stored in the database. When a
-// matching payment is found it is recorded as an XRPLPayment and the
-// corresponding open Invoice is marked as paid.
-
+// xrpl_reconciler.go – background worker that polls the XRP Ledger for incoming payments and reconciles them against open invoices.
 package server
+
+// Author: Benjamin Stonestreet
+// Created: 2026-03-01
 
 import (
 	"backend/libraries/webhooks"
@@ -33,7 +28,7 @@ const (
 	// defaultXRPLRPCURL points at the Ripple Testnet. Override with the
 	// XRPL_RPC_URL environment variable for Mainnet or a private node.
 	defaultXRPLRPCURL = "https://s.altnet.rippletest.net:51234"
-	// when no explicit interval is configured.
+	// defaultReconcileInterval is the polling interval used when no explicit interval is configured.
 	defaultReconcileInterval = 5 * time.Second
 
 	// Invoice / payment status strings shared between the reconciler and the
@@ -378,6 +373,8 @@ func (r *XRPLReconciler) recordAndMatchPayment(merchantID string, destination st
 	return nil
 }
 
+// dispatchInvoicePaidWebhook fires the invoice.paid webhook event for the given merchant
+// and records the delivery result in the WebhookLog table.
 func (r *XRPLReconciler) dispatchInvoicePaidWebhook(merchantID string, invoice models.Invoice, payment models.XRPLPayment) {
 	var config models.MerchantWebhookKey
 	err := r.db.Where("merchant_webhook_key_merchant_id = ?", merchantID).Limit(1).Find(&config).Error

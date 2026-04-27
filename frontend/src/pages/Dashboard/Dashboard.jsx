@@ -1,9 +1,15 @@
-// Authors: Ben Stonestreet, Joe Hotze, Ryan Grimsley
-// Created: 02/20/26
-// Description: JSX file for the merchant dashboard, displays recent transactions, volume stats
+// Dashboard.jsx – merchant dashboard page displaying volume stats, recent activity, and invoice search.
+// Author: Ben Stonestreet, Joe Hotze, Ryan Grimsley
+// Created: 2026-02-20
+
 import { useMerchant } from "../../contexts/MerchantContext";
 import { useEffect, useState } from "react";
 
+/**
+ * Dashboard renders the main merchant overview with gross volume statistics,
+ * a recent activity table, invoice search, and pagination.
+ * @returns {JSX.Element} The rendered Dashboard page.
+ */
 export default function Dashboard() {
     const { selectedMerchant, isLoading } = useMerchant();
 
@@ -11,7 +17,7 @@ export default function Dashboard() {
     const [dashboardLoading, setDashboardLoading] = useState(false);
     const [dashboardError, setDashboardError] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
-    
+
     // Search state
     const [searchTerm, setSearchTerm] = useState("");
     const [searchResults, setSearchResults] = useState(null);
@@ -20,6 +26,7 @@ export default function Dashboard() {
     const [isSearching, setIsSearching] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
 
+    // Fetch dashboard data whenever the selected merchant changes.
     useEffect(() => {
         if (!selectedMerchant?.id) {
             setDashboardData(null);
@@ -58,9 +65,13 @@ export default function Dashboard() {
         fetchDashboard();
     }, [selectedMerchant?.id]);
 
+    /**
+     * Submits the invoice search query and stores the matching results.
+     * @param {React.FormEvent} e The form submit event.
+     */
     const handleSearch = async (e) => {
         e.preventDefault();
-        
+
         const trimmedSearchTerm = searchTerm.trim();
         if (!trimmedSearchTerm) {
             setSearchError("Please enter an invoice ID to search");
@@ -97,6 +108,9 @@ export default function Dashboard() {
         }
     };
 
+    /**
+     * Clears the active invoice search and restores the default activity view.
+     */
     const handleClearSearch = () => {
         setSearchTerm("");
         setSearchResults(null);
@@ -122,6 +136,11 @@ export default function Dashboard() {
           ]
         : [];
 
+    /**
+     * Returns inline style overrides for a transaction status badge.
+     * @param {string} status The invoice status string.
+     * @returns {Object} Style object with color, background, and border.
+     */
     const getStatusStyles = (status) => {
         if (status === "Settled") {
             return {
@@ -150,8 +169,9 @@ export default function Dashboard() {
         return true;
     });
 
+    // Determine which activity set to display: search results take priority over recent activity.
     const activityToDisplay = isSearching ? searchResults : dashboardData?.recentActivity;
-    
+
     const filteredActivityForDisplay = activityToDisplay?.filter((row) => {
         if (statusFilter === "all") return true;
         if (statusFilter === "completed") return row.status === "Settled";
@@ -299,50 +319,47 @@ export default function Dashboard() {
                     )}
                 </div>
 
-                
-                
-                    <form
-                        onSubmit={handleSearch}
-                        style={{ marginBottom: "1rem", display: "flex", gap: "0.5rem" }}
+                <form
+                    onSubmit={handleSearch}
+                    style={{ marginBottom: "1rem", display: "flex", gap: "0.5rem" }}
+                >
+                    <input
+                        type="text"
+                        placeholder="Search transactions by Invoice ID..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        style={{
+                            flex: 1,
+                            padding: "0.5rem 0.75rem",
+                            borderRadius: "6px",
+                            border: "1px solid rgba(128,128,128,0.25)",
+                            background: "var(--color-base)",
+                            color: "inherit",
+                            fontSize: "0.95rem",
+                        }}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                                handleSearch(e);
+                            }
+                        }}
+                    />
+                    <button
+                        type="submit"
+                        disabled={searchLoading}
+                        style={{
+                            padding: "0.5rem 1rem",
+                            borderRadius: "6px",
+                            border: "1px solid rgba(128,128,128,0.25)",
+                            background: "var(--color-accent)",
+                            color: "white",
+                            cursor: searchLoading ? "not-allowed" : "pointer",
+                            fontWeight: 600,
+                            opacity: searchLoading ? 0.7 : 1,
+                        }}
                     >
-                        <input
-                            type="text"
-                            placeholder="Search transactions by Invoice ID..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            style={{
-                                flex: 1,
-                                padding: "0.5rem 0.75rem",
-                                borderRadius: "6px",
-                                border: "1px solid rgba(128,128,128,0.25)",
-                                background: "var(--color-base)",
-                                color: "inherit",
-                                fontSize: "0.95rem",
-                            }}
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                    handleSearch(e);
-                                }
-                            }}
-                        />
-                        <button
-                            type="submit"
-                            disabled={searchLoading}
-                            style={{
-                                padding: "0.5rem 1rem",
-                                borderRadius: "6px",
-                                border: "1px solid rgba(128,128,128,0.25)",
-                                background: "var(--color-accent)",
-                                color: "white",
-                                cursor: searchLoading ? "not-allowed" : "pointer",
-                                fontWeight: 600,
-                                opacity: searchLoading ? 0.7 : 1,
-                            }}
-                        >
-                            {searchLoading ? "Searching..." : "Search"}
-                        </button>
-                    </form>
-                
+                        {searchLoading ? "Searching..." : "Search"}
+                    </button>
+                </form>
 
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                     <thead>
@@ -388,7 +405,7 @@ export default function Dashboard() {
                     </tbody>
                 </table>
 
-                {/* Pagination and error/empty state */}
+                {/* Pagination controls and empty / error states */}
                 {searchError && (
                     <div style={{ marginTop: "1rem", color: "#991b1b", fontSize: "0.95rem" }}>
                         {searchError}

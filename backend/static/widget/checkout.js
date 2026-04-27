@@ -1,6 +1,6 @@
-
+// checkout.js – self-contained checkout widget that renders the XRPay payment modal on merchant pages.
 // Author: Benjamin Stonestreet
-// Created: 2026-02-02
+// Created: 2026-03-01
 
 (function attachMyPay(global) {
   const STATE = {

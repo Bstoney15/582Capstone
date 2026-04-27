@@ -1,8 +1,8 @@
+// seed.go – development and production seed data helpers for populating the database with initial fixtures.
 package server
 
 // Author: Benjamin Stonestreet
-// Created: 2026-03-01
-// Description: This file contains functions to seed the database with initial data for development and testing purposes.
+// Created: 2026-02-18
 
 import (
 	"backend/models"
@@ -16,6 +16,8 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+// Seed ID constants used by both SeedDevData and ResetSeedData so that cleanup
+// always targets the exact rows that were inserted.
 const (
 	seedMerchantID         = "seed-merchant-001"
 	seedMerchantID2        = "seed-merchant-002"

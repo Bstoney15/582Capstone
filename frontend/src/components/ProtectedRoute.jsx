@@ -1,5 +1,5 @@
 // Author: Benjamin Stonestreet
-// Created: 2026-02-02
+// Created: 2026-02-20
 // Description: This component protects routes that require authentication.
 
 import { useEffect } from "react";

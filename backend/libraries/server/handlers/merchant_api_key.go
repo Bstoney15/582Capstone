@@ -1,7 +1,8 @@
-// Authors: Ben Stonestreet
-// Created: 03/29/26
-// Description: handler functions for merchant api keys
+// merchant_api_key.go – handlers for listing, creating, and revoking merchant API keys.
 package routes
+
+// Author: Benjamin Stonestreet
+// Created: 2026-03-29
 
 import (
 	"backend/libraries/sessionManager"
@@ -19,17 +20,20 @@ import (
 	"gorm.io/gorm"
 )
 
+// merchantAPIKeySummary is the response shape returned for each active API key (no plaintext).
 type merchantAPIKeySummary struct {
 	ID          string    `json:"id"`
 	Name        string    `json:"name"`
 	GeneratedAt time.Time `json:"generated_at"`
 }
 
+// createMerchantAPIKeyRequest is the JSON payload for creating a new API key.
 type createMerchantAPIKeyRequest struct {
 	MerchantID string `json:"merchant_id"`
 	Name       string `json:"name"`
 }
 
+// createMerchantAPIKeyResponse is returned exactly once after key creation; it includes the plaintext value.
 type createMerchantAPIKeyResponse struct {
 	ID          string    `json:"id"`
 	Name        string    `json:"name"`
@@ -37,11 +41,13 @@ type createMerchantAPIKeyResponse struct {
 	APIKey      string    `json:"api_key"`
 }
 
+// hashAPIKey returns the SHA-256 hex digest of the given plaintext token.
 func hashAPIKey(token string) string {
 	digest := sha256.Sum256([]byte(token))
 	return hex.EncodeToString(digest[:])
 }
 
+// generatePlaintextAPIKey creates a cryptographically random API key with an "sk_" prefix.
 func generatePlaintextAPIKey() (string, error) {
 	randomBytes := make([]byte, 24)
 	if _, err := rand.Read(randomBytes); err != nil {
@@ -51,6 +57,8 @@ func generatePlaintextAPIKey() (string, error) {
 	return "sk_" + hex.EncodeToString(randomBytes), nil
 }
 
+// requireMerchantMembership validates the caller's session and confirms they have a role
+// for the given merchant. It returns the caller's user ID and true on success.
 func (h *Handler) requireMerchantMembership(r *http.Request, merchantID string) (string, bool) {
 	sessionToken, err := sessionManager.GetSessionToken(r)
 	if err != nil {
@@ -70,6 +78,7 @@ func (h *Handler) requireMerchantMembership(r *http.Request, merchantID string) 
 	return sessionData.UserID, true
 }
 
+// GetMerchantAPIKeysHandler returns all non-revoked API keys for the specified merchant.
 func (h *Handler) GetMerchantAPIKeysHandler(w http.ResponseWriter, r *http.Request) {
 	merchantID := strings.TrimSpace(r.URL.Query().Get("merchant_id"))
 	if merchantID == "" {
@@ -102,6 +111,8 @@ func (h *Handler) GetMerchantAPIKeysHandler(w http.ResponseWriter, r *http.Reque
 	json.NewEncoder(w).Encode(response)
 }
 
+// CreateMerchantAPIKeyHandler generates a new API key for the specified merchant and
+// returns the plaintext value exactly once in the response.
 func (h *Handler) CreateMerchantAPIKeyHandler(w http.ResponseWriter, r *http.Request) {
 	var requestBody createMerchantAPIKeyRequest
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
@@ -150,6 +161,7 @@ func (h *Handler) CreateMerchantAPIKeyHandler(w http.ResponseWriter, r *http.Req
 	})
 }
 
+// DeleteMerchantAPIKeyHandler soft-deletes an API key by setting its revoked flag to true.
 func (h *Handler) DeleteMerchantAPIKeyHandler(w http.ResponseWriter, r *http.Request) {
 	apiKeyID := strings.TrimSpace(r.PathValue("api_key"))
 	merchantID := strings.TrimSpace(r.URL.Query().Get("merchant_id"))

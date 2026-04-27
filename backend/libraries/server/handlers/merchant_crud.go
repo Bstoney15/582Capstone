@@ -1,7 +1,8 @@
-// Authors: Ben Stonestreet
-// Created: 04/12/26
-// Description: handler functions for merchant crud
+// merchant_crud.go – handlers for merchant-scoped customer and invoice CRUD operations via API key authentication.
 package routes
+
+// Author: Benjamin Stonestreet
+// Created: 2026-04-12
 
 import (
 	"backend/libraries/apiauth"
@@ -17,18 +18,21 @@ import (
 	"gorm.io/gorm"
 )
 
+// createCustomerRequest is the JSON payload for creating a new customer.
 type createCustomerRequest struct {
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
 	Email     string `json:"email"`
 }
 
+// updateCustomerRequest is the JSON payload for partially updating a customer; all fields are optional.
 type updateCustomerRequest struct {
 	FirstName *string `json:"first_name"`
 	LastName  *string `json:"last_name"`
 	Email     *string `json:"email"`
 }
 
+// createInvoiceMerchantRequest is the JSON payload for creating an invoice via the merchant API.
 type createInvoiceMerchantRequest struct {
 	CustomerID    string `json:"customer_id"`
 	AmountCharged string `json:"amount_charged"`
@@ -38,6 +42,7 @@ type createInvoiceMerchantRequest struct {
 	CryptoType    string `json:"crypto_type"`
 }
 
+// updateInvoiceMerchantRequest is the JSON payload for partially updating an invoice; all fields are optional.
 type updateInvoiceMerchantRequest struct {
 	CustomerID    *string `json:"customer_id"`
 	AmountCharged *string `json:"amount_charged"`
@@ -47,6 +52,8 @@ type updateInvoiceMerchantRequest struct {
 	CryptoType    *string `json:"crypto_type"`
 }
 
+// requireMerchantIDFromAPIKey extracts and validates the merchant ID from the API key context.
+// It writes a 401 and returns false if the key is missing or invalid.
 func requireMerchantIDFromAPIKey(w http.ResponseWriter, r *http.Request) (string, bool) {
 	merchantID, ok := apiauth.MerchantIDFromContext(r.Context())
 	if !ok {
@@ -56,6 +63,7 @@ func requireMerchantIDFromAPIKey(w http.ResponseWriter, r *http.Request) (string
 	return merchantID, true
 }
 
+// CreateMerchantCustomerHandler creates a new customer record for the authenticated merchant.
 func (h *Handler) CreateMerchantCustomerHandler(w http.ResponseWriter, r *http.Request) {
 	merchantID, ok := requireMerchantIDFromAPIKey(w, r)
 	if !ok {
@@ -86,6 +94,7 @@ func (h *Handler) CreateMerchantCustomerHandler(w http.ResponseWriter, r *http.R
 	json.NewEncoder(w).Encode(customer)
 }
 
+// ListMerchantCustomersHandler returns all customers belonging to the authenticated merchant.
 func (h *Handler) ListMerchantCustomersHandler(w http.ResponseWriter, r *http.Request) {
 	merchantID, ok := requireMerchantIDFromAPIKey(w, r)
 	if !ok {
@@ -102,6 +111,7 @@ func (h *Handler) ListMerchantCustomersHandler(w http.ResponseWriter, r *http.Re
 	json.NewEncoder(w).Encode(customers)
 }
 
+// GetMerchantCustomerHandler returns a single customer scoped to the authenticated merchant.
 func (h *Handler) GetMerchantCustomerHandler(w http.ResponseWriter, r *http.Request) {
 	merchantID, ok := requireMerchantIDFromAPIKey(w, r)
 	if !ok {
@@ -129,6 +139,7 @@ func (h *Handler) GetMerchantCustomerHandler(w http.ResponseWriter, r *http.Requ
 	json.NewEncoder(w).Encode(customer)
 }
 
+// UpdateMerchantCustomerHandler applies a partial update to a customer record.
 func (h *Handler) UpdateMerchantCustomerHandler(w http.ResponseWriter, r *http.Request) {
 	merchantID, ok := requireMerchantIDFromAPIKey(w, r)
 	if !ok {
@@ -147,6 +158,7 @@ func (h *Handler) UpdateMerchantCustomerHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	// Build a map of only the fields that were provided in the request.
 	updates := map[string]interface{}{}
 	if request.FirstName != nil {
 		updates["customer_first_name"] = strings.TrimSpace(*request.FirstName)
@@ -176,6 +188,7 @@ func (h *Handler) UpdateMerchantCustomerHandler(w http.ResponseWriter, r *http.R
 	h.GetMerchantCustomerHandler(w, r)
 }
 
+// DeleteMerchantCustomerHandler permanently deletes a customer record for the authenticated merchant.
 func (h *Handler) DeleteMerchantCustomerHandler(w http.ResponseWriter, r *http.Request) {
 	merchantID, ok := requireMerchantIDFromAPIKey(w, r)
 	if !ok {
@@ -201,6 +214,7 @@ func (h *Handler) DeleteMerchantCustomerHandler(w http.ResponseWriter, r *http.R
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// parseBoolQuery converts a raw query string value to a boolean, accepting "true", "1", "yes", and "y".
 func parseBoolQuery(value string) bool {
 	trimmed := strings.TrimSpace(strings.ToLower(value))
 	if trimmed == "" {
@@ -215,6 +229,7 @@ func parseBoolQuery(value string) bool {
 	return trimmed == "1" || trimmed == "yes" || trimmed == "y"
 }
 
+// CreateMerchantInvoiceHandler creates a new invoice for a customer belonging to the authenticated merchant.
 func (h *Handler) CreateMerchantInvoiceHandler(w http.ResponseWriter, r *http.Request) {
 	merchantID, ok := requireMerchantIDFromAPIKey(w, r)
 	if !ok {
@@ -233,6 +248,7 @@ func (h *Handler) CreateMerchantInvoiceHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	// Verify the customer belongs to this merchant before creating the invoice.
 	var customer models.Customer
 	if err := h.DB.Where("customer_id = ? AND customer_merchant_id = ?", customerID, merchantID).First(&customer).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -259,6 +275,7 @@ func (h *Handler) CreateMerchantInvoiceHandler(w http.ResponseWriter, r *http.Re
 		feeAmount = parsedFee
 	}
 
+	// Apply defaults for optional fields.
 	status := strings.TrimSpace(request.Status)
 	if status == "" {
 		status = "created"
@@ -294,6 +311,8 @@ func (h *Handler) CreateMerchantInvoiceHandler(w http.ResponseWriter, r *http.Re
 	json.NewEncoder(w).Encode(invoice)
 }
 
+// ListMerchantInvoicesHandler returns all invoices for customers belonging to the authenticated merchant.
+// Supports optional query filters: completed_only and status.
 func (h *Handler) ListMerchantInvoicesHandler(w http.ResponseWriter, r *http.Request) {
 	merchantID, ok := requireMerchantIDFromAPIKey(w, r)
 	if !ok {
@@ -322,6 +341,7 @@ func (h *Handler) ListMerchantInvoicesHandler(w http.ResponseWriter, r *http.Req
 	json.NewEncoder(w).Encode(invoices)
 }
 
+// GetMerchantInvoiceHandler returns a single invoice scoped to the authenticated merchant.
 func (h *Handler) GetMerchantInvoiceHandler(w http.ResponseWriter, r *http.Request) {
 	merchantID, ok := requireMerchantIDFromAPIKey(w, r)
 	if !ok {
@@ -353,6 +373,7 @@ func (h *Handler) GetMerchantInvoiceHandler(w http.ResponseWriter, r *http.Reque
 	json.NewEncoder(w).Encode(invoice)
 }
 
+// UpdateMerchantInvoiceHandler applies a partial update to an invoice scoped to the authenticated merchant.
 func (h *Handler) UpdateMerchantInvoiceHandler(w http.ResponseWriter, r *http.Request) {
 	merchantID, ok := requireMerchantIDFromAPIKey(w, r)
 	if !ok {
@@ -371,6 +392,7 @@ func (h *Handler) UpdateMerchantInvoiceHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	// Build update map from only the provided fields.
 	updates := map[string]interface{}{}
 	if request.Status != nil {
 		updates["invoice_status"] = strings.TrimSpace(*request.Status)
@@ -404,6 +426,7 @@ func (h *Handler) UpdateMerchantInvoiceHandler(w http.ResponseWriter, r *http.Re
 			return
 		}
 
+		// Verify the new customer belongs to this merchant.
 		var customer models.Customer
 		if err := h.DB.Where("customer_id = ? AND customer_merchant_id = ?", customerID, merchantID).First(&customer).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -421,6 +444,7 @@ func (h *Handler) UpdateMerchantInvoiceHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	// Fetch the scoped invoice to confirm ownership before applying updates.
 	var scopedInvoice models.Invoice
 	err := h.DB.Model(&models.Invoice{}).
 		Joins("JOIN merchant_customers ON merchant_customers.customer_id = invoice.invoice_customer_id").
@@ -445,6 +469,7 @@ func (h *Handler) UpdateMerchantInvoiceHandler(w http.ResponseWriter, r *http.Re
 	h.GetMerchantInvoiceHandler(w, r)
 }
 
+// DeleteMerchantInvoiceHandler permanently deletes an invoice scoped to the authenticated merchant.
 func (h *Handler) DeleteMerchantInvoiceHandler(w http.ResponseWriter, r *http.Request) {
 	merchantID, ok := requireMerchantIDFromAPIKey(w, r)
 	if !ok {
@@ -457,6 +482,7 @@ func (h *Handler) DeleteMerchantInvoiceHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	// Fetch the scoped invoice to confirm ownership before deletion.
 	var scopedInvoice models.Invoice
 	err := h.DB.Model(&models.Invoice{}).
 		Joins("JOIN merchant_customers ON merchant_customers.customer_id = invoice.invoice_customer_id").

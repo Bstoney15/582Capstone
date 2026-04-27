@@ -1,7 +1,8 @@
+// merchant_crypto_wallet.go – GORM model storing a merchant's XRPL wallet address and verification status.
 package models
 
 // Author: Benjamin Stonestreet
-// Created: 2026-02-02
+// Created: 2026-02-09
 
 // MerchantCryptoWallet holds the XRPL wallet address and verification status
 // for a merchant to receive payments.

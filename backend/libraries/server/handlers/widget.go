@@ -1,7 +1,8 @@
+// widget.go – handler that serves the embedded checkout widget JavaScript file to clients.
 package routes
 
 // Author: Benjamin Stonestreet
-// Created: 2026-03-08
+// Created: 2026-03-01
 
 import (
 	widgetstatic "backend/static/widget"

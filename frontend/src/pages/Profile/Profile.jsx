@@ -1,7 +1,12 @@
+// Profile.jsx – page that allows users to view and update their profile information and password.
+// Author: Ben Stonestreet
+// Created: 2026-02-20
+
 import { useEffect, useState } from "react";
 import { fetchUserProfile, updateUserProfile } from "../../services/profileService";
 import "./Profile.css";
 
+// EMPTY_FORM is the initial (reset) state for the editable profile form fields.
 const EMPTY_FORM = {
     user_username: "",
     user_first_name: "",
@@ -9,6 +14,12 @@ const EMPTY_FORM = {
     current_password: "",
 };
 
+/**
+ * Builds the update payload containing only fields that differ from the original profile.
+ * @param {Object} form The current form values.
+ * @param {Object} originalProfile The profile values as loaded from the server.
+ * @returns {Object} A partial update object with only the changed fields.
+ */
 function buildPayload(form, originalProfile) {
     const payload = {};
 
@@ -27,9 +38,11 @@ function buildPayload(form, originalProfile) {
     return payload;
 }
 
-// Authors: Ben Stonestreet
-// Created: 02/20/26
-// Description: placeholder profile page
+/**
+ * Profile renders the user's account details and an editable form for updating their
+ * username, name, and (optionally) their password.
+ * @returns {JSX.Element} The rendered Profile page.
+ */
 export default function Profile() {
     const [profile, setProfile] = useState(null);
     const [form, setForm] = useState(EMPTY_FORM);
@@ -38,6 +51,7 @@ export default function Profile() {
     const [error, setError] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
 
+    // Load the user's profile from the API on mount.
     useEffect(() => {
         let isMounted = true;
 
@@ -72,12 +86,17 @@ export default function Profile() {
         };
     }, []);
 
+    // True when at least one form field differs from the loaded profile.
     const hasChanges =
         profile &&
         (form.user_username.trim() !== profile.user_username ||
             form.user_first_name.trim() !== profile.user_first_name ||
             form.user_last_name.trim() !== profile.user_last_name);
 
+    /**
+     * Updates a single form field and clears any success message.
+     * @param {React.ChangeEvent<HTMLInputElement>} event The change event.
+     */
     const handleChange = (event) => {
         const { name, value } = event.target;
         setForm((currentForm) => ({
@@ -87,6 +106,9 @@ export default function Profile() {
         setSuccessMessage("");
     };
 
+    /**
+     * Resets the form to the last saved profile values.
+     */
     const handleReset = () => {
         if (!profile) return;
 
@@ -100,6 +122,10 @@ export default function Profile() {
         setSuccessMessage("");
     };
 
+    /**
+     * Submits the profile update. Requires the current password to authorize changes.
+     * @param {React.FormEvent} event The form submit event.
+     */
     const handleSubmit = async (event) => {
         event.preventDefault();
         if (!profile) return;

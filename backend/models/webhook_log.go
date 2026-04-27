@@ -1,8 +1,13 @@
+// webhook_log.go – GORM model recording each outbound webhook dispatch attempt and its result.
 package models
+
+// Author: Benjamin Stonestreet
+// Created: 2026-04-26
 
 import "time"
 
-// WebhookLog records each outbound webhook dispatch attempt.
+// WebhookLog records each outbound webhook dispatch attempt, including the HTTP status,
+// number of retries, and any error message returned by the merchant endpoint.
 type WebhookLog struct {
 	WebhookLogID         string    `gorm:"primaryKey;type:varchar(36)" json:"webhook_log_id"`
 	WebhookLogMerchantID string    `gorm:"not null;type:varchar(36);index" json:"webhook_log_merchant_id"`
@@ -17,6 +22,7 @@ type WebhookLog struct {
 	Merchant             Merchant  `gorm:"foreignKey:WebhookLogMerchantID;references:MerchantID" json:"merchant,omitempty"`
 }
 
+// TableName sets the table name for WebhookLog.
 func (WebhookLog) TableName() string {
 	return "webhook_log"
 }

@@ -1,7 +1,8 @@
+// merchant_business_profile.go – GORM model storing a merchant's legal and business registration details.
 package models
 
 // Author: Benjamin Stonestreet
-// Created: 2026-02-02
+// Created: 2026-02-09
 
 // MerchantBusinessProfile stores the business details of a merchant, such as
 // DBA name, tax ID, legal structure, and contact information.

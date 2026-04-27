@@ -1,5 +1,5 @@
 // Author: Benjamin Stonestreet
-// Created: 2026-03-03
+// Created: 2026-03-01
 // This is a demo page showcasing the XRPay checkout widget integration. It simulates a simple storefront where users can select quantities of coffee-related items and proceed to checkout using the XRPay widget. The page handles loading the widget script, creating an invoice on the backend, and starting the widget checkout flow. Status messages are displayed to guide the user through the process.
 
 

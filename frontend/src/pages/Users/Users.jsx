@@ -1,14 +1,17 @@
-/* 
-Author: Ryan Grimsley
-Date Created: 02/24/26
-Description: User page frontend, allows for viweing, editing, adding,
-             and removing users of your merchant organization
-*/
+// Users.jsx – page for viewing, adding, editing, and removing users of a merchant organization.
+// Author: Ryan Grimsley
+// Created: 2026-02-20
+
 import { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { useMerchant } from "../../contexts/MerchantContext";
 import "./Users.css";
 
+/**
+ * Users renders the merchant user management page. Admins and Owners can view,
+ * add, edit roles for, and remove users from the selected merchant.
+ * @returns {JSX.Element} The rendered Users page or a redirect for unauthorized callers.
+ */
 export default function Users() {
     const { merchants, selectedMerchant, setSelectedMerchant, requireRole, isLoading } = useMerchant();
 
@@ -33,7 +36,7 @@ export default function Users() {
 
     const ROLES = ["Owner", "Admin", "Developer"];
 
-    // Fetch current user info on mount
+    // Fetch the current user's own info on mount so the editor ID is available for mutations.
     useEffect(() => {
         const fetchUserInfo = async () => {
             setUserInfoLoading(true);
@@ -52,26 +55,22 @@ export default function Users() {
         fetchUserInfo();
     }, []);
 
-    // Fetch users for the selected merchant whenever it changes
+    // Fetch users for the selected merchant whenever it changes.
     useEffect(() => {
-        // if no selected merchant
         if (!selectedMerchant?.id) {
             setMerchantUsers([]);
             setMerchantUsersError(null);
             return;
         }
-        // function to fetch all users associated with the selected merchant
+
         const fetchMerchantUsers = async () => {
             setMerchantUsersLoading(true);
             setMerchantUsersError(null);
             try {
-                // backend call
                 const res = await fetch(
                     `/api/merchant/get-merchant-users?merchant_id=${encodeURIComponent(selectedMerchant.id)}`
                 );
-                // error if fails
                 if (!res.ok) throw new Error("Failed to load users for this merchant");
-                // convert to json
                 const data = await res.json();
                 setMerchantUsers(Array.isArray(data) ? data : []);
             } catch (err) {
@@ -91,11 +90,15 @@ export default function Users() {
             </div>
         );
     }
-    // if user is not an admin or above, return to dashboard
+
+    // Redirect non-admin users back to the dashboard.
     if (!requireRole("Admin")) {
         return <Navigate to="/dashboard" replace />;
     }
-    // runs when add user button is clicked
+
+    /**
+     * Opens the add-user modal if a merchant is selected.
+     */
     const handleAddUser = () => {
         if (!selectedMerchant?.id) return;
         openAddModal();
@@ -114,7 +117,10 @@ export default function Users() {
         setAddUserRole("");
         setAddError(null);
     };
-    // runs when save is hit in add user modal
+
+    /**
+     * Submits the add-user form, creating a new role entry for the specified username.
+     */
     const handleSaveAddUser = async () => {
         if (!selectedMerchant?.id) return;
         const trimmedUsername = addUserUsername.trim();
@@ -125,7 +131,6 @@ export default function Users() {
         setAddSaving(true);
         setAddError(null);
         try {
-            // call to backend, sends post with what merchant, role, and userid to add to db entry
             const res = await fetch("/api/merchant/add-user", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -140,7 +145,7 @@ export default function Users() {
                 throw new Error(text || "Failed to add user");
             }
 
-            // Refresh merchant users list
+            // Refresh the merchant users list after a successful add.
             try {
                 const usersRes = await fetch(
                     `/api/merchant/get-merchant-users?merchant_id=${encodeURIComponent(selectedMerchant.id)}`
@@ -161,22 +166,29 @@ export default function Users() {
         }
     };
 
+    /**
+     * Opens the edit modal for the given user.
+     * @param {Object} user The user record to edit.
+     */
     const openEditModal = (user) => {
         setEditingUser(user);
         setEditRole(user.role || "");
         setEditError(null);
     };
+
     const closeEditModal = () => {
         setEditingUser(null);
         setEditError(null);
     };
-    // runs when save is hit in edit modal
+
+    /**
+     * Saves the role change for the user being edited.
+     */
     const handleSaveEdit = async () => {
         if (!editingUser || !selectedMerchant?.id) return;
         setEditSaving(true);
         setEditError(null);
         try {
-            // backend call that sends info to edit existing db entry
             const res = await fetch("/api/merchant/edit-user-role", {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
@@ -189,7 +201,7 @@ export default function Users() {
             });
             if (!res.ok) throw new Error("Failed to update role");
             closeEditModal();
-            // update the page with the edited user 
+            // Optimistically update the local list with the new role.
             setMerchantUsers((prev) =>
                 prev.map((u) =>
                     u.user_id === editingUser.user_id ? { ...u, role: editRole } : u
@@ -201,14 +213,16 @@ export default function Users() {
             setEditSaving(false);
         }
     };
-    // runs when remove button is pressed in edit modal
+
+    /**
+     * Removes the user being edited from the merchant after confirming with the user.
+     */
     const handleRemoveFromMerchant = async () => {
         if (!editingUser || !selectedMerchant?.id) return;
         if (!confirm(`Remove ${editingUser.username} from ${selectedMerchant.name}?`)) return;
         setEditSaving(true);
         setEditError(null);
         try {
-            // backend call with db entry to delete
             const res = await fetch("/api/merchant/remove-user", {
                 method: "DELETE",
                 headers: { "Content-Type": "application/json" },
@@ -232,7 +246,7 @@ export default function Users() {
         <div style={{ padding: "2rem", maxWidth: 900, margin: "0 auto" }}>
             <h1 style={{ marginBottom: "1.5rem" }}>Users</h1>
 
-            {/* Your info box */}
+            {/* Current user info summary */}
             <section className="users-info-box"
             >
                 <h2 >
@@ -259,7 +273,7 @@ export default function Users() {
             {/* Merchant users for currently selected merchant */}
             <section>
                 {merchants.length === 0 ? (
-                    <p>You don’t have any merchants yet.</p>
+                    <p>You don't have any merchants yet.</p>
                 ) : !selectedMerchant ? (
                     <p>No merchant selected.</p>
                 ) : (
@@ -375,6 +389,8 @@ export default function Users() {
                     </div>
                 </div>
             )}
+
+            {/* Add user modal */}
             {addingUser && (
                 <div className="users-modal-backdrop" onClick={closeAddModal}>
                     <div className="users-modal" onClick={(e) => e.stopPropagation()}>

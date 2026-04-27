@@ -1,11 +1,8 @@
-// Authors: Ben Stonestreet
-// Created: 02/02/26
-// Description: main server struct
-
-// Package server wires together the HTTP router, database connection, GORM
-// migrations, development seed data, and the XRPL reconciler into a single
-// Server type that the main entry-point uses to start the application.
+// server.go – core Server type that wires together the HTTP router, database, migrations, and reconciler.
 package server
+
+// Author: Benjamin Stonestreet
+// Created: 2026-02-02
 
 import (
 	routes "backend/libraries/server/handlers"
@@ -32,7 +29,7 @@ type Server struct {
 // NewServer initialises the database connection and returns a Server ready to
 // be started. The database driver is chosen at runtime:
 //   - SQLite (file ./xrpay.db) is used by default for local development.
-//   - MySQL is used when the "production" environment variable is set to "true".
+//   - MySQL is used when the DATABASE_URL environment variable is set.
 func NewServer() *Server {
 
 	driver := sqlite.Open("./xrpay.db")

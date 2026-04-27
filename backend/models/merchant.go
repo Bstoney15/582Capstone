@@ -1,7 +1,8 @@
+// merchant.go – GORM model representing the core merchant record with ID and name.
 package models
 
 // Author: Benjamin Stonestreet
-// Created: 2026-02-02
+// Created: 2026-02-09
 
 // Merchant stores the core identifier and name of a registered merchant.
 type Merchant struct {

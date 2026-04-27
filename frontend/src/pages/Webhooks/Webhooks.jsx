@@ -1,5 +1,6 @@
+// Webhooks.jsx – page for managing merchant webhook endpoints and viewing delivery logs.
 // Author: Charley Findling, Benjamin Stonestreet
-// Created: 3/24/2026
+// Created: 2026-04-26
 
 import { useMerchant } from "../../contexts/MerchantContext";
 import { useCallback, useEffect, useState } from "react";

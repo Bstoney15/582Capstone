@@ -1,7 +1,8 @@
+// merchant_address.go – GORM model storing a merchant's physical address and verification status.
 package models
 
 // Author: Benjamin Stonestreet
-// Created: 2026-02-02
+// Created: 2026-02-09
 
 // MerchantAddress stores the physical address details for a merchant,
 // including verification status.

@@ -1,7 +1,8 @@
+// merchant_webhook_key.go – GORM model storing a merchant's webhook endpoint URL and signing secret.
 package models
 
 // Author: Benjamin Stonestreet
-// Created: 2026-03-06
+// Created: 2026-02-09
 
 // MerchantWebhookKey holds the webhook keys for a merchant, used to securely
 // send event notifications to the merchant's endpoints.

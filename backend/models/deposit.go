@@ -1,7 +1,8 @@
+// deposit.go – GORM model representing an incoming crypto deposit from a customer.
 package models
 
 // Author: Benjamin Stonestreet
-// Created: 2026-02-02
+// Created: 2026-02-09
 
 import "github.com/shopspring/decimal"
 

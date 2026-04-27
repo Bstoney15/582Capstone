@@ -1,11 +1,17 @@
+// ApiKeys.jsx – page for managing merchant API keys: list, generate, and revoke.
 // Author: Ben Stonestreet
-// Created: 03/05/26
-// Description: page that allows for api key adjustment
+// Created: 2026-02-20
 
 import { useEffect, useState } from "react";
 import { useMerchant } from "../../contexts/MerchantContext";
 import { createApiKey, deleteApiKey, fetchApiKeys } from "../../services/apiKeyService";
 
+/**
+ * ApiKeys renders the API key management page for the selected merchant.
+ * Users can generate new named API keys and revoke existing ones.
+ * A one-time modal displays the plaintext key immediately after generation.
+ * @returns {JSX.Element} The rendered ApiKeys page.
+ */
 export default function ApiKeys() {
     const { selectedMerchant, isLoading } = useMerchant();
     const [keys, setKeys] = useState([]);
@@ -18,6 +24,7 @@ export default function ApiKeys() {
     const [latestToken, setLatestToken] = useState("");
     const [copyMessage, setCopyMessage] = useState("");
 
+    // Reload keys and reset ephemeral UI state whenever the selected merchant changes.
     useEffect(() => {
         const loadKeys = async () => {
             if (!selectedMerchant) {
@@ -48,6 +55,9 @@ export default function ApiKeys() {
         loadKeys();
     }, [selectedMerchant]);
 
+    /**
+     * Refreshes the key list from the backend without resetting the token modal.
+     */
     const loadKeys = async () => {
         if (!selectedMerchant) {
             setKeys([]);
@@ -64,6 +74,10 @@ export default function ApiKeys() {
         }
     };
 
+    /**
+     * Handles the generate key form submission; creates a new key and shows the token modal.
+     * @param {React.FormEvent} event The form submit event.
+     */
     const onGenerateKey = async (event) => {
         event.preventDefault();
         const name = newKeyName.trim();
@@ -92,6 +106,10 @@ export default function ApiKeys() {
         }
     };
 
+    /**
+     * Revokes an API key after confirming with the user.
+     * @param {string} id The ID of the key to delete.
+     */
     const onDeleteKey = async (id) => {
         if (!window.confirm("Are you sure you want to delete this API key?")) return;
 
@@ -109,6 +127,9 @@ export default function ApiKeys() {
         }
     };
 
+    /**
+     * Copies the newly generated plaintext token to the clipboard.
+     */
     const onCopyToken = async () => {
         try {
             await navigator.clipboard.writeText(latestToken);
@@ -126,6 +147,7 @@ export default function ApiKeys() {
         <div style={{ padding: "2rem", maxWidth: "840px" }}>
             <h1>API Keys</h1>
 
+            {/* One-time plaintext token modal — shown immediately after key generation */}
             {showTokenModal && (
                 <div style={modalOverlayStyle} role="dialog" aria-modal="true" aria-labelledby="api-key-modal-title">
                     <div style={modalCardStyle}>

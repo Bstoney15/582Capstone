@@ -1,4 +1,8 @@
+// webhook_log.go – handlers for listing webhook delivery logs and re-sending a previously failed webhook.
 package routes
+
+// Author: Benjamin Stonestreet
+// Created: 2026-04-26
 
 import (
 	"backend/libraries/webhooks"
@@ -14,6 +18,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// webhookLogSummary is the response shape returned for each webhook delivery log entry.
 type webhookLogSummary struct {
 	ID         string    `json:"id"`
 	InvoiceID  string    `json:"invoice_id"`
@@ -25,6 +30,7 @@ type webhookLogSummary struct {
 	CreatedAt  time.Time `json:"created_at"`
 }
 
+// ListWebhookLogsHandler returns the most recent webhook delivery logs for the specified merchant.
 func (h *Handler) ListWebhookLogsHandler(w http.ResponseWriter, r *http.Request) {
 	merchantID := strings.TrimSpace(r.URL.Query().Get("merchant_id"))
 	if merchantID == "" {
@@ -64,6 +70,8 @@ func (h *Handler) ListWebhookLogsHandler(w http.ResponseWriter, r *http.Request)
 	json.NewEncoder(w).Encode(response)
 }
 
+// ResendWebhookHandler re-dispatches an existing webhook log entry to the merchant's configured endpoint
+// and records the result as a new log entry.
 func (h *Handler) ResendWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	logID := strings.TrimSpace(r.PathValue("log_id"))
 	merchantID := strings.TrimSpace(r.URL.Query().Get("merchant_id"))
@@ -88,6 +96,7 @@ func (h *Handler) ResendWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Confirm an active webhook endpoint is still configured for this merchant.
 	var config models.MerchantWebhookKey
 	if err := h.DB.Where("merchant_webhook_key_merchant_id = ?", merchantID).Limit(1).Find(&config).Error; err != nil || strings.TrimSpace(config.MerchantWebhookURL) == "" {
 		http.Error(w, "no webhook configured for this merchant", http.StatusBadRequest)
@@ -106,6 +115,7 @@ func (h *Handler) ResendWebhookHandler(w http.ResponseWriter, r *http.Request) {
 
 	result, dispatchErr := dispatcher.Dispatch(ctx, config.MerchantWebhookURL, config.MerchantWebhookKey, original.WebhookLogEventType, payload)
 
+	// Record the resend attempt as a new log entry regardless of outcome.
 	newLog := models.WebhookLog{
 		WebhookLogID:         uuid.New().String(),
 		WebhookLogMerchantID: merchantID,

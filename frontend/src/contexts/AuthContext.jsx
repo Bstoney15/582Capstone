@@ -1,5 +1,6 @@
+// AuthContext.jsx – React context and provider that manages user authentication state and session polling.
 // Author: Benjamin Stonestreet
-// Created: 2026-02-21
+// Created: 2026-02-20
 
 
 import { createContext, useContext, useState, useEffect } from "react";

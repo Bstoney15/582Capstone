@@ -1,7 +1,8 @@
-// Authors: Ben Stonestreet
-// Created: 04/12/26
-// Description: works with merchant api keys
+// merchant_api_key.go – middleware that validates merchant API keys and injects the merchant ID into the request context.
 package apiauth
+
+// Author: Benjamin Stonestreet
+// Created: 2026-04-12
 
 import (
 	"backend/models"
@@ -18,10 +19,14 @@ import (
 	"gorm.io/gorm"
 )
 
+// maxRequestBodyBytes caps the number of bytes read from a request body when
+// searching for an embedded api_key field, preventing excessively large reads.
 const maxRequestBodyBytes = 1024 * 1024
 
+// contextKey is a private type used for context value keys to avoid collisions.
 type contextKey string
 
+// merchantIDContextKey is the key under which the validated merchant ID is stored in the request context.
 const merchantIDContextKey contextKey = "merchant_api_key_merchant_id"
 
 // MerchantIDFromContext returns the merchant id attached by API key middleware.
@@ -72,6 +77,8 @@ func RequireMerchantAPIKey(db *gorm.DB, next http.Handler) http.Handler {
 	})
 }
 
+// extractMerchantAPIKey searches for an API key in the request, checking the
+// X-API-Key header, Authorization bearer token, api_key query param, and JSON body in that order.
 func extractMerchantAPIKey(r *http.Request) (string, error) {
 	apiKey := strings.TrimSpace(r.Header.Get("X-API-Key"))
 	if apiKey != "" {
@@ -100,6 +107,7 @@ func extractMerchantAPIKey(r *http.Request) (string, error) {
 		return "", nil
 	}
 
+	// Read and buffer the body so downstream handlers can still read it.
 	body, err := io.ReadAll(io.LimitReader(r.Body, maxRequestBodyBytes))
 	if err != nil {
 		return "", err
@@ -128,6 +136,7 @@ func extractMerchantAPIKey(r *http.Request) (string, error) {
 	return strings.TrimSpace(asString), nil
 }
 
+// hashAPIKey returns the SHA-256 hex digest of the given plaintext token.
 func hashAPIKey(token string) string {
 	digest := sha256.Sum256([]byte(token))
 	return hex.EncodeToString(digest[:])

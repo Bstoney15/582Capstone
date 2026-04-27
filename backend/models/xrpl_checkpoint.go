@@ -1,7 +1,8 @@
+// xrpl_checkpoint.go – GORM model tracking the last processed XRPL ledger index per wallet account.
 package models
 
 // Author: Benjamin Stonestreet
-// Created: 2026-02-02
+// Created: 2026-03-01
 
 import "time"
 

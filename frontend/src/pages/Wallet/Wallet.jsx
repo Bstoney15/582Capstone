@@ -1,10 +1,16 @@
-// Authors: Ben Stonestreet, Ryan Grimsley
-// Created: 02/20/26
-// Description: wallet page where users can view and edit wallet associated with a merchant
+// Wallet.jsx – page for viewing and updating the XRPL wallet address associated with a merchant.
+// Author: Ben Stonestreet, Ryan Grimsley
+// Created: 2026-02-20
+
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useMerchant } from "../../contexts/MerchantContext";
 
+/**
+ * Wallet renders the merchant wallet management page. Admin and Owner roles can
+ * view the current wallet address, replace it, and link out to the XRPL Explorer.
+ * @returns {JSX.Element} The rendered Wallet page or a redirect for unauthorized callers.
+ */
 export default function Wallet() {
     const { requireRole, isLoading, selectedMerchant } = useMerchant();
     const [walletAddress, setWalletAddress] = useState("");
@@ -14,6 +20,7 @@ export default function Wallet() {
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
 
+    // Fetch the current wallet address whenever the selected merchant changes.
     useEffect(() => {
         async function fetchWallet() {
             try {
@@ -39,6 +46,7 @@ export default function Wallet() {
                 const data = await response.json();
                 setWalletAddress(data.wallet_address || "");
                 setDraftWalletAddress(data.wallet_address || "");
+                // Show the form immediately if there is no address yet.
                 setEditing(!data.wallet_address);
             } catch {
                 setError("Failed to load wallet.");
@@ -50,6 +58,10 @@ export default function Wallet() {
         }
     }, [selectedMerchant]);
 
+    /**
+     * Submits the new wallet address to the backend.
+     * @param {React.FormEvent} event The form submit event.
+     */
     const onSubmitWallet = async (event) => {
         event.preventDefault();
 

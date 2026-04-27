@@ -1,7 +1,8 @@
+// invoice_create.go – handler for creating invoices, including XRP/USD amount resolution and destination-tag allocation.
 package routes
 
 // Author: Benjamin Stonestreet
-// Created: 2026-03-08
+// Created: 2026-03-01
 
 import (
 	"backend/libraries/apiauth"

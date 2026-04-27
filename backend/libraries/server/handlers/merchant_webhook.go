@@ -1,4 +1,8 @@
+// merchant_webhook.go – handlers for creating, listing, and deleting merchant webhook configurations.
 package routes
+
+// Author: Benjamin Stonestreet
+// Created: 2026-04-26
 
 import (
 	"backend/models"
@@ -11,6 +15,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// webhookSummary is the response shape returned for each configured webhook.
 type webhookSummary struct {
 	ID        string `json:"id"`
 	URL       string `json:"url"`
@@ -18,6 +23,7 @@ type webhookSummary struct {
 	UpdatedAt string `json:"updatedAt"`
 }
 
+// GetMerchantWebhooksHandler returns the webhook configuration for the specified merchant.
 func (h *Handler) GetMerchantWebhooksHandler(w http.ResponseWriter, r *http.Request) {
 	merchantID := strings.TrimSpace(r.URL.Query().Get("merchant_id"))
 	if merchantID == "" {
@@ -37,6 +43,7 @@ func (h *Handler) GetMerchantWebhooksHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// Only include the webhook in the response if a URL has actually been configured.
 	result := []webhookSummary{}
 	if config.MerchantWebhookKeyID != "" && strings.TrimSpace(config.MerchantWebhookURL) != "" {
 		result = append(result, webhookSummary{
@@ -51,6 +58,8 @@ func (h *Handler) GetMerchantWebhooksHandler(w http.ResponseWriter, r *http.Requ
 	json.NewEncoder(w).Encode(result)
 }
 
+// CreateMerchantWebhookHandler creates or updates the webhook configuration for the specified merchant.
+// Each merchant may only have one active webhook; existing configs are updated in place.
 func (h *Handler) CreateMerchantWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	type createWebhookRequest struct {
 		MerchantID string `json:"merchant_id"`
@@ -78,6 +87,7 @@ func (h *Handler) CreateMerchantWebhookHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	// Check for an existing webhook config; update it rather than creating a duplicate.
 	var existing models.MerchantWebhookKey
 	err := h.DB.Where("merchant_webhook_key_merchant_id = ?", body.MerchantID).Limit(1).Find(&existing).Error
 	if err != nil {
@@ -124,6 +134,7 @@ func (h *Handler) CreateMerchantWebhookHandler(w http.ResponseWriter, r *http.Re
 	})
 }
 
+// DeleteMerchantWebhookHandler permanently removes a webhook configuration for the specified merchant.
 func (h *Handler) DeleteMerchantWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	webhookID := strings.TrimSpace(r.PathValue("webhook_id"))
 	merchantID := strings.TrimSpace(r.URL.Query().Get("merchant_id"))

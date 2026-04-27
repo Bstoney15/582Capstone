@@ -1,3 +1,4 @@
+// auth.go – handler that verifies the caller's session cookie and returns authentication status.
 package routes
 
 // Author: Benjamin Stonestreet

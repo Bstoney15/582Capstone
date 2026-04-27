@@ -1,7 +1,6 @@
+// Settings.jsx – settings page for managing appearance preferences and merchant memberships.
 // Author: Charley Findling
-// Created: 3/29/2026
-// Description: Settings page - current functionality is listing associated merchants
-//              with an option to sever the connection, and an option to remember dark mode.
+// Created: 2026-02-20
 
 import { useCallback, useEffect, useState } from "react";
 import { useTheme } from "../../contexts/ThemeContext";
@@ -49,6 +48,11 @@ const toggleContainerStyle = {
   marginBottom: "2rem",
 };
 
+/**
+ * Returns inline styles for the toggle track based on the on/off state.
+ * @param {boolean} isOn Whether the toggle is active.
+ * @returns {Object} Style object for the track element.
+ */
 const toggleTrackStyle = (isOn) => ({
   width: "48px",
   height: "26px",
@@ -59,6 +63,11 @@ const toggleTrackStyle = (isOn) => ({
   transition: "background-color 0.2s",
 });
 
+/**
+ * Returns inline styles for the toggle knob based on the on/off state.
+ * @param {boolean} isOn Whether the toggle is active.
+ * @returns {Object} Style object for the knob element.
+ */
 const toggleKnobStyle = (isOn) => ({
   width: "22px",
   height: "22px",
@@ -73,19 +82,23 @@ const toggleKnobStyle = (isOn) => ({
 
 /* ── Component ──────────────────────────────────────────────────────── */
 
+/**
+ * Settings renders the user settings page with appearance (dark mode toggle) and
+ * merchant membership management (leave a merchant).
+ * @returns {JSX.Element} The rendered Settings page.
+ */
 export default function Settings() {
-  /* ── Theme from context (FR 9.2) ───────────────────────────── */
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === "dark";
 
-  /* ── Merchant state (FR 9.1) ───────────────────────────────── */
   const [merchants, setMerchants] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [status, setStatus] = useState(null);
 
-  /* ── Load merchants ────────────────────────────────────────── */
-
+  /**
+   * Fetches the list of merchants the current user belongs to.
+   */
   const loadMerchants = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -103,8 +116,11 @@ export default function Settings() {
     loadMerchants();
   }, [loadMerchants]);
 
-  /* ── Leave merchant (FR 10.1) ──────────────────────────────── */
-
+  /**
+   * Removes the current user's role from the specified merchant after confirmation.
+   * @param {string} merchantId The ID of the merchant to leave.
+   * @param {string} merchantName The display name of the merchant (used in the confirm dialog).
+   */
   const onLeaveMerchant = async (merchantId, merchantName) => {
     if (
       !window.confirm(
@@ -131,8 +147,6 @@ export default function Settings() {
     }
   };
 
-  /* ── Render ────────────────────────────────────────────────── */
-
   return (
     <div style={{ padding: "2rem", maxWidth: "760px" }}>
       <h1>Settings</h1>
@@ -158,7 +172,7 @@ export default function Settings() {
       </div>
       </div>
 
-      {/* ── Merchant list (FR 9.1) ───────────────────────────── */}
+      {/* Merchant list */}
       <h2 style={sectionHeadingStyle}>Your Merchants</h2>
       <p style={{ marginBottom: "1rem" }}>
         Manage merchant accounts linked to your profile. Leaving a merchant will

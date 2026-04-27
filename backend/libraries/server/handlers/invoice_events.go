@@ -1,7 +1,8 @@
+// invoice_events.go – Server-Sent Events handler that streams real-time invoice status updates to clients.
 package routes
 
 // Author: Benjamin Stonestreet
-// Created: 2026-03-08
+// Created: 2026-03-01
 
 import (
 	"backend/models"

@@ -1,7 +1,8 @@
+// merchant_owner.go – GORM model storing information about individual owners or stakeholders of a merchant.
 package models
 
 // Author: Benjamin Stonestreet
-// Created: 2026-02-02
+// Created: 2026-02-09
 
 import (
 	"time"

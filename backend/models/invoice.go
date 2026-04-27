@@ -1,7 +1,8 @@
+// invoice.go – GORM model representing a payment invoice for a merchant customer.
 package models
 
 // Author: Benjamin Stonestreet
-// Created: 2026-02-02
+// Created: 2026-02-09
 
 import (
 	"time"
