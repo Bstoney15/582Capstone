@@ -1,6 +1,6 @@
-// Authors: Ben Stonestreet, Connor Williamson
-// Created: 02/12/26
-// Description: react login page where users to log in
+// Author: Connor-Williamson
+// Date Created: 2026-02-14
+// Description: React login page component that authenticates users via username and password, then redirects to dashboard on success.
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";

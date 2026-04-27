@@ -1,6 +1,6 @@
-// Authors: Ben Stonestreet, Connor Williamson
-// Created: 02/12/26
-// Description: signup page where users sign up
+// Author: Connor-Williamson
+// Date Created: 2026-02-14
+// Description: React signup page component that creates new user accounts with form validation, password confirmation, and error handling.
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";

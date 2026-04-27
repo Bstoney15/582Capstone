@@ -1,6 +1,6 @@
-// Authors: Connor Williamson
-// Created: 04/08/26
-// Description: handler functions for merchant customers
+// Author: Connor-Williamson
+// Date Created: 2026-04-08
+// Description: Retrieves and filters customers for an authenticated merchant user with role-based access control and search functionality.
 package routes
 
 import (
