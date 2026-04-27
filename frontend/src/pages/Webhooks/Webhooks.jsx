@@ -1,7 +1,5 @@
 // Author: Charley Findling, Benjamin Stonestreet
 // Created: 3/24/2026
-// Description: This is the webhooks page that allows the user to view, create, and delete (currently) one webhook.
-//              Calls async functions from webhookService.js to abstract away the server communications.
 
 import { useMerchant } from "../../contexts/MerchantContext";
 import { useCallback, useEffect, useState } from "react";
@@ -9,6 +7,8 @@ import {
   fetchWebhooks,
   createWebhook,
   deleteWebhook,
+  fetchWebhookLogs,
+  resendWebhook,
 } from "../../services/webhookService";
 
 /* ── Styles ─────────────────────────────────────────────────────────── */
@@ -47,16 +47,21 @@ export default function Webhooks() {
   const [webhookUrl, setWebhookUrl] = useState("");
   const [webhookSecret, setWebhookSecret] = useState("");
 
-  // Data state
+  // Config data state
   const [webhooks, setWebhooks] = useState([]);
   const [isLoadingWebhooks, setIsLoadingWebhooks] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
 
+  // Log state
+  const [logs, setLogs] = useState([]);
+  const [isLoadingLogs, setIsLoadingLogs] = useState(false);
+  const [resendingId, setResendingId] = useState(null);
+
   // Feedback
   const [status, setStatus] = useState(null); // { type: "error"|"success", message: string }
 
-  /* ── Fetch webhooks whenever they change ─────────────────── */
+  /* ── Loaders ──────────────────────────────────────────────────────── */
 
   const loadWebhooks = useCallback(async () => {
     if (!selectedMerchant) {
@@ -67,11 +72,26 @@ export default function Webhooks() {
     try {
       const data = await fetchWebhooks(selectedMerchant);
       setWebhooks(data);
-    } catch (err) {
-      console.error("Failed to load webhooks", err);
+    } catch {
       setStatus({ type: "error", message: "Failed to load webhooks." });
     } finally {
       setIsLoadingWebhooks(false);
+    }
+  }, [selectedMerchant]);
+
+  const loadLogs = useCallback(async () => {
+    if (!selectedMerchant) {
+      setLogs([]);
+      return;
+    }
+    setIsLoadingLogs(true);
+    try {
+      const data = await fetchWebhookLogs(selectedMerchant);
+      setLogs(Array.isArray(data) ? data : []);
+    } catch {
+      // Non-critical — don't surface as a blocking error
+    } finally {
+      setIsLoadingLogs(false);
     }
   }, [selectedMerchant]);
 
@@ -80,7 +100,8 @@ export default function Webhooks() {
     setWebhookUrl("");
     setWebhookSecret("");
     loadWebhooks();
-  }, [loadWebhooks]);
+    loadLogs();
+  }, [loadWebhooks, loadLogs]);
 
   /* ── Save ──────────────────────────────────────────────────────────── */
 
@@ -106,9 +127,8 @@ export default function Webhooks() {
       setWebhookUrl("");
       setWebhookSecret("");
       setStatus({ type: "success", message: "Webhook saved successfully." });
-      await loadWebhooks(); // refresh list from source of truth
-    } catch (err) {
-      console.error("Failed to save webhook", err);
+      await loadWebhooks();
+    } catch {
       setStatus({ type: "error", message: "Failed to save webhook. Please try again." });
     } finally {
       setIsSaving(false);
@@ -127,11 +147,30 @@ export default function Webhooks() {
       await deleteWebhook(selectedMerchant, id);
       setStatus({ type: "success", message: "Webhook deleted." });
       await loadWebhooks();
-    } catch (err) {
-      console.error("Failed to delete webhook", err);
+    } catch {
       setStatus({ type: "error", message: "Failed to delete webhook." });
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  /* ── Resend ────────────────────────────────────────────────────────── */
+
+  const onResend = async (logId) => {
+    setResendingId(logId);
+    setStatus(null);
+    try {
+      const result = await resendWebhook(selectedMerchant, logId);
+      if (result.succeeded) {
+        setStatus({ type: "success", message: "Webhook resent successfully." });
+      } else {
+        setStatus({ type: "error", message: `Resend failed: ${result.error || "unknown error"}` });
+      }
+      await loadLogs();
+    } catch {
+      setStatus({ type: "error", message: "Failed to resend webhook." });
+    } finally {
+      setResendingId(null);
     }
   };
 
@@ -142,7 +181,7 @@ export default function Webhooks() {
   }
 
   return (
-    <div style={{ padding: "2rem", maxWidth: "760px" }}>
+    <div style={{ padding: "2rem", maxWidth: "900px" }}>
       <h1>Webhooks</h1>
 
       {selectedMerchant ? (
@@ -215,9 +254,7 @@ export default function Webhooks() {
         </form>
       )}
 
-      {selectedMerchant && isLoadingWebhooks && (
-        <p>Loading webhooks…</p>
-      )}
+      {selectedMerchant && isLoadingWebhooks && <p>Loading webhooks…</p>}
 
       {selectedMerchant && !isLoadingWebhooks && webhooks.length > 0 && (
         <div style={tableContainerStyle}>
@@ -226,7 +263,6 @@ export default function Webhooks() {
               <tr>
                 <th style={headerCellStyle}>Webhook URL</th>
                 <th style={headerCellStyle}>Key</th>
-                <th style={headerCellStyle}>Updated</th>
                 <th style={headerCellStyle}>Action</th>
               </tr>
             </thead>
@@ -239,9 +275,6 @@ export default function Webhooks() {
                   <td style={bodyCellStyle}>{webhook.url}</td>
                   <td style={bodyCellStyle}>
                     {webhook.hasSecret ? "••••••••" : "None"}
-                  </td>
-                  <td style={bodyCellStyle}>
-                    {new Date(webhook.updatedAt).toLocaleString()}
                   </td>
                   <td style={bodyCellStyle}>
                     <button
@@ -263,6 +296,78 @@ export default function Webhooks() {
         <p style={{ color: "var(--table-text)", fontStyle: "italic" }}>
           No webhooks configured yet.
         </p>
+      )}
+
+      {/* ── Event Log ──────────────────────────────────────────────── */}
+
+      {selectedMerchant && (
+        <>
+          <h2 style={{ marginTop: "2rem", marginBottom: "0.75rem" }}>Event Log</h2>
+          <p style={{ marginBottom: "1rem" }}>
+            History of outbound webhook dispatch attempts. Use Resend to
+            manually re-deliver any event.
+          </p>
+
+          {isLoadingLogs && <p>Loading event log…</p>}
+
+          {!isLoadingLogs && logs.length === 0 && (
+            <p style={{ color: "var(--table-text)", fontStyle: "italic" }}>
+              No webhook events recorded yet.
+            </p>
+          )}
+
+          {!isLoadingLogs && logs.length > 0 && (
+            <div style={tableContainerStyle}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    <th style={headerCellStyle}>Event</th>
+                    <th style={headerCellStyle}>Invoice</th>
+                    <th style={headerCellStyle}>Status</th>
+                    <th style={headerCellStyle}>HTTP</th>
+                    <th style={headerCellStyle}>Attempts</th>
+                    <th style={headerCellStyle}>Time</th>
+                    <th style={headerCellStyle}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {logs.map((log) => (
+                    <tr
+                      key={log.id}
+                      style={{ borderTop: "1px solid var(--table-border)" }}
+                    >
+                      <td style={bodyCellStyle}>{log.event_type}</td>
+                      <td style={{ ...bodyCellStyle, fontFamily: "monospace", fontSize: "0.8rem" }}>
+                        {log.invoice_id ? log.invoice_id.slice(0, 8) + "…" : "—"}
+                      </td>
+                      <td style={bodyCellStyle}>
+                        <span style={{ color: log.succeeded ? "#166534" : "#b91c1c", fontWeight: 600 }}>
+                          {log.succeeded ? "OK" : "Failed"}
+                        </span>
+                      </td>
+                      <td style={bodyCellStyle}>
+                        {log.status_code > 0 ? log.status_code : "—"}
+                      </td>
+                      <td style={bodyCellStyle}>{log.attempts > 0 ? log.attempts : "—"}</td>
+                      <td style={{ ...bodyCellStyle, fontSize: "0.85rem" }}>
+                        {new Date(log.created_at).toLocaleString()}
+                      </td>
+                      <td style={bodyCellStyle}>
+                        <button
+                          type="button"
+                          disabled={resendingId === log.id}
+                          onClick={() => onResend(log.id)}
+                        >
+                          {resendingId === log.id ? "Sending…" : "Resend"}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

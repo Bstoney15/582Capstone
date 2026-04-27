@@ -1,3 +1,7 @@
+// Authors: Charley Findling, Ben Stonestreet
+// Created: 02/25/26
+// Description: page where users can create a new merchant
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 

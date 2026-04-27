@@ -27,6 +27,9 @@ function buildPayload(form, originalProfile) {
     return payload;
 }
 
+// Authors: Ben Stonestreet
+// Created: 02/20/26
+// Description: placeholder profile page
 export default function Profile() {
     const [profile, setProfile] = useState(null);
     const [form, setForm] = useState(EMPTY_FORM);

@@ -1,3 +1,7 @@
+// Authors: Ben Stonestreet
+// Created: 02/02/26
+// Description: main server struct
+
 // Package server wires together the HTTP router, database connection, GORM
 // migrations, development seed data, and the XRPL reconciler into a single
 // Server type that the main entry-point uses to start the application.
@@ -146,5 +150,8 @@ func (s *Server) AutoMigrateDB() error {
 		// XRPL ledger reconciliation state.
 		&models.XRPLCheckpoint{},
 		&models.XRPLPayment{},
+
+		// Audit logs.
+		&models.WebhookLog{},
 	)
 }

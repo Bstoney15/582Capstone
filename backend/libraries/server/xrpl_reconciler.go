@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -277,7 +278,9 @@ func (r *XRPLReconciler) reconcileWallet(merchantID string, address string) erro
 
 // recordAndMatchPayment persists an XRPLPayment record and, if it is new
 // (RowsAffected > 0 after the conflict-ignoring insert), tries to match it
-// against the oldest open invoice whose amount equals the payment's XRP value.
+// to an open invoice for the merchant. If a non-zero destination tag is
+// present, it matches by that tag first; otherwise it falls back to amount
+// matching for backward compatibility with legacy invoices.
 // On a successful match the invoice status is set to "paid" and the payment
 // row is linked to that invoice – both changes happen inside a single
 // transaction to avoid partial updates.
@@ -304,36 +307,58 @@ func (r *XRPLReconciler) recordAndMatchPayment(merchantID string, destination st
 		return nil
 	}
 
-	// Convert drops (integer string) to XRP with 4 decimal places for invoice matching.
-	dropsDecimal, err := decimal.NewFromString(amountDrops)
-	if err != nil {
-		return err
-	}
-
-	amountXRP := dropsDecimal.Div(decimal.NewFromInt(1_000_000)).Round(4)
-
-	// Find the oldest open invoice for this merchant with the exact XRP amount.
 	var invoice models.Invoice
-	findResult := r.db.
-		Joins("JOIN merchant_customers ON merchant_customers.customer_id = invoice.invoice_customer_id").
-		Where("merchant_customers.customer_merchant_id = ?", merchantID).
-		Where("invoice.invoice_status IN ?", []string{xrplPaymentStatusCreated, xrplPaymentStatusPending}).
-		Where("invoice.invoice_amount_charged = ?", amountXRP).
-		Order("invoice.invoice_id ASC").
-		Limit(1).
-		Find(&invoice)
+	var findResult *gorm.DB
 
-	if findResult.Error != nil {
-		return findResult.Error
-	}
+	if destinationTag != nil && *destinationTag != 0 {
+		findResult = r.db.
+			Joins("JOIN merchant_customers ON merchant_customers.customer_id = invoice.invoice_customer_id").
+			Where("merchant_customers.customer_merchant_id = ?", merchantID).
+			Where("invoice.invoice_status IN ?", []string{xrplPaymentStatusCreated, xrplPaymentStatusPending}).
+			Where("invoice.invoice_destination_tag = ?", *destinationTag).
+			Order("invoice.invoice_id ASC").
+			Limit(1).
+			Find(&invoice)
 
-	// No matching invoice is a normal outcome (e.g. spontaneous deposits).
-	if findResult.RowsAffected == 0 {
-		return nil
+		if findResult.Error != nil {
+			return findResult.Error
+		}
+
+		// Tagged payments should only match by tag; if no tag match exists,
+		// leave the payment unlinked rather than risking an amount collision.
+		if findResult.RowsAffected == 0 {
+			return nil
+		}
+	} else {
+		// Convert drops (integer string) to XRP with 4 decimal places for legacy amount matching.
+		dropsDecimal, err := decimal.NewFromString(amountDrops)
+		if err != nil {
+			return err
+		}
+
+		amountXRP := dropsDecimal.Div(decimal.NewFromInt(1_000_000)).Round(4)
+
+		findResult = r.db.
+			Joins("JOIN merchant_customers ON merchant_customers.customer_id = invoice.invoice_customer_id").
+			Where("merchant_customers.customer_merchant_id = ?", merchantID).
+			Where("invoice.invoice_status IN ?", []string{xrplPaymentStatusCreated, xrplPaymentStatusPending}).
+			Where("invoice.invoice_amount_charged = ?", amountXRP).
+			Order("invoice.invoice_id ASC").
+			Limit(1).
+			Find(&invoice)
+
+		if findResult.Error != nil {
+			return findResult.Error
+		}
+
+		// No matching invoice is a normal outcome (e.g. spontaneous deposits).
+		if findResult.RowsAffected == 0 {
+			return nil
+		}
 	}
 
 	// Atomically mark the invoice as paid and link the payment to it.
-	err = r.db.Transaction(func(tx *gorm.DB) error {
+	err := r.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Model(&models.Invoice{}).
 			Where("invoice_id = ?", invoice.InvoiceID).
 			Where("invoice_status IN ?", []string{xrplPaymentStatusCreated, xrplPaymentStatusPending}).
@@ -375,11 +400,31 @@ func (r *XRPLReconciler) dispatchInvoicePaidWebhook(merchantID string, invoice m
 		"processed_at":   payment.ProcessedAt,
 	}
 
+	payloadJSON, _ := json.Marshal(payload)
+
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
 
-	if _, dispatchErr := r.webhooks.Dispatch(ctx, config.MerchantWebhookURL, config.MerchantWebhookKey, "invoice.paid", payload); dispatchErr != nil {
+	result, dispatchErr := r.webhooks.Dispatch(ctx, config.MerchantWebhookURL, config.MerchantWebhookKey, "invoice.paid", payload)
+
+	logEntry := models.WebhookLog{
+		WebhookLogID:         uuid.New().String(),
+		WebhookLogMerchantID: merchantID,
+		WebhookLogInvoiceID:  invoice.InvoiceID,
+		WebhookLogEventType:  "invoice.paid",
+		WebhookLogPayload:    string(payloadJSON),
+		WebhookLogSucceeded:  dispatchErr == nil,
+	}
+	if result != nil {
+		logEntry.WebhookLogStatusCode = result.StatusCode
+		logEntry.WebhookLogAttempts = result.Attempt
+	}
+	if dispatchErr != nil {
+		logEntry.WebhookLogError = dispatchErr.Error()
 		log.Printf("xrpl reconciler: webhook dispatch failed for merchant %s invoice %s: %v", merchantID, invoice.InvoiceID, dispatchErr)
+	}
+	if err := r.db.Create(&logEntry).Error; err != nil {
+		log.Printf("xrpl reconciler: failed to save webhook log for merchant %s: %v", merchantID, err)
 	}
 }
 

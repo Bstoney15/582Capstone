@@ -1,3 +1,7 @@
+// Author: Ben Stonestreet
+// Created: 03/05/26
+// Description: page that allows for api key adjustment
+
 import { useEffect, useState } from "react";
 import { useMerchant } from "../../contexts/MerchantContext";
 import { createApiKey, deleteApiKey, fetchApiKeys } from "../../services/apiKeyService";

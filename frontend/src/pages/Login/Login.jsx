@@ -1,3 +1,6 @@
+// Authors: Ben Stonestreet, Connor Williamson
+// Created: 02/12/26
+// Description: react login page where users to log in
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
