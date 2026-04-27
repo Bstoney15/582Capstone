@@ -1,3 +1,6 @@
+// Authors: Ben Stonestreet, Connor Williamson
+// Created: 02/12/26
+// Description: signup page where users sign up
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";

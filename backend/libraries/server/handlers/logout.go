@@ -1,3 +1,6 @@
+// Authors: Ben Stonestreet
+// Created: 04/07/26
+// Description: handler function for logout
 package routes
 
 import (

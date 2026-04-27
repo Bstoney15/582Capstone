@@ -1,3 +1,6 @@
+// Authors: Connor Williamson
+// Created: 04/08/26
+// Description: handler functions for merchant customers
 package routes
 
 import (

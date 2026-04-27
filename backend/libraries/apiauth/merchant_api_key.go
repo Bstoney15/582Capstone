@@ -1,3 +1,6 @@
+// Authors: Ben Stonestreet
+// Created: 04/12/26
+// Description: works with merchant api keys
 package apiauth
 
 import (

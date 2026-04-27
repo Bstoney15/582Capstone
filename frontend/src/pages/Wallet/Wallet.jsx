@@ -1,3 +1,6 @@
+// Authors: Ben Stonestreet, Ryan Grimsley
+// Created: 02/20/26
+// Description: wallet page where users can view and edit wallet associated with a merchant
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useMerchant } from "../../contexts/MerchantContext";

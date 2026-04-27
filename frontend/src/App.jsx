@@ -1,3 +1,6 @@
+// Authors: Ben Stonestreet, Connor Williamson, Charley Finling, Ryan Grimsley
+// Created: 02/12/26
+// Description: main app page
 import { createBrowserRouter, RouterProvider, Outlet, Navigate } from "react-router-dom";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./contexts/AuthContext";

@@ -1,3 +1,6 @@
+// Authors: Ben Stonestreet
+// Created: 02/20/26
+// Description: placeholder profile page
 export default function Profile() {
     return (
         <div style={{ padding: "2rem" }}>

@@ -1,3 +1,6 @@
+// Authors: Ben Stonestreet
+// Created: 02/15/26
+// Description: handler functions for login
 package routes
 
 import (

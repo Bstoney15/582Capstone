@@ -1,3 +1,6 @@
+// Author: Connor Williamson
+// Created: 04/0/26
+
 import { useState, useEffect } from "react";
 import { useMerchant } from "../../contexts/MerchantContext";
 import "./Customers.css";
