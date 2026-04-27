@@ -1,3 +1,6 @@
+// Authors: Ben Stonestreet
+// Created: 04/12/26
+// Description: handler functions for merchant crud
 package routes
 
 import (

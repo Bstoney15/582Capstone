@@ -1,3 +1,6 @@
+// Authors: Ben Stonestreet, Connor Williamson
+// Created: 02/12/26
+// Description: main page react uses for display
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";

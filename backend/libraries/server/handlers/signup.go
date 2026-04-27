@@ -1,3 +1,6 @@
+// Authors: Ben Stonestreet
+// Created: 02/15/26
+// Description: handler function for signup
 package routes
 
 import (
