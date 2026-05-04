@@ -10,7 +10,7 @@ type MerchantCryptoWallet struct {
 	MerchantCryptoWalletID         string   `gorm:"primaryKey;type:varchar(36)" json:"merchant_crypto_wallet_id"`
 	MerchantCryptoWalletMerchantID string   `gorm:"not null;type:varchar(36)" json:"merchant_crypto_wallet_merchant_id"`
 	Merchant                       Merchant `gorm:"foreignKey:MerchantCryptoWalletMerchantID;references:MerchantID" json:"merchant,omitempty"`
-	MerchantCryptoWalletAddress    string   `gorm:"not null;uniqueIndex:ux_merchant_crypto_wallet_address" json:"merchant_crypto_wallet_address"`
+	MerchantCryptoWalletAddress    string   `gorm:"type:varchar(255);not null;uniqueIndex:ux_merchant_crypto_wallet_address" json:"merchant_crypto_wallet_address"`
 	MerchantCryptoWalletVerified   bool     `gorm:"not null" json:"merchant_crypto_wallet_verified"`
 }
 
